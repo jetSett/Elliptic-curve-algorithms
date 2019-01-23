@@ -3,6 +3,7 @@
 extern crate gmp;
 
 use std::ops::{Add, Sub, Mul, Div};
+use std::clone::Clone;
 
 use std::marker::PhantomData;
 
@@ -60,15 +61,14 @@ impl<N> Fp<N>
         }
 }
 
-
-impl<N> Add for &Fp<N>
+impl<N> Clone for Fp<N>
     where N : IntegerAsType{
-        type Output = Fp<N>;
-
-        fn add(self, other: &Fp<N>) -> Fp<N>{
-            Fp::<N>::new((self.repr + other.repr) % N::value())
+        fn clone(&self) -> Fp<N>{
+            Fp::<N>::new(self.repr)
         }
 }
+
+impl<N> Copy for Fp<N> where N : IntegerAsType{}
 
 impl<N> Add for Fp<N>
     where N : IntegerAsType{
@@ -76,16 +76,6 @@ impl<N> Add for Fp<N>
 
         fn add(self, other: Fp<N>) -> Fp<N>{
             Fp::<N>::new((self.repr + other.repr) % N::value())
-        }
-}
-
-
-impl<N> Sub for &Fp<N>
-    where N : IntegerAsType{
-        type Output = Fp<N>;
-
-        fn sub(self, other: &Fp<N>) -> Fp<N>{
-            Fp::<N>::new((self.repr - other.repr + N::value()) % N::value())
         }
 }
 
@@ -98,32 +88,12 @@ impl<N> Sub for Fp<N>
         }
 }
 
-
-impl<N> Mul for &Fp<N>
-    where N : IntegerAsType{
-        type Output = Fp<N>;
-
-        fn mul(self, other: &Fp<N>) -> Fp<N>{
-            Fp::<N>::new((self.repr*other.repr) % N::value())
-        }
-}
-
 impl<N> Mul for Fp<N>
     where N : IntegerAsType{
         type Output = Fp<N>;
 
         fn mul(self, other: Fp<N>) -> Fp<N>{
             Fp::<N>::new((self.repr*other.repr) % N::value())
-        }
-}
-
-
-impl<N> Div for &Fp<N>
-    where N : IntegerAsType{
-        type Output = Fp<N>;
-
-        fn div(self, other: &Fp<N>) -> Fp<N>{
-            self*&(other.inv())
         }
 }
 
