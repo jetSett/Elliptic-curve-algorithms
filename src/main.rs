@@ -31,19 +31,21 @@ fn main() {
     }
     println!("Found ! computing order...\n");
     let mut p1 = p;
+    let mut p1_old = p;
 
     let mut i = 1;
 
     while p1 != Point::InfPoint && E::is_on_curve(&p1){
+        p1_old = p1;
         p1 = p1 + p;
         println!("{}", E::is_on_curve(&p1));
-        println!("{:?}", p1);
+        println!("{}", p1);
         i+=1;
     }
-    if let Point::FinPoint(finPoint) = p{
-        println!();
-    }
-    if(! E::is_on_curve(&p1)){
+
+    println!("{}", p1_old);
+
+    if! E::is_on_curve(&p1){
         println!("Error");
     }
     println!("{}", i);

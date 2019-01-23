@@ -4,6 +4,7 @@
 
 use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::clone::Clone;
+use std::fmt;
 
 use std::marker::PhantomData;
 
@@ -19,6 +20,12 @@ pub struct Fp<N : IntegerAsType>{
     _phantom : PhantomData<N>,
 }
 
+impl<N> fmt::Display for Fp<N>
+    where N : IntegerAsType{
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{}", self.repr)
+        }
+}
 
 impl<N> Fp<N>
     where N : IntegerAsType{

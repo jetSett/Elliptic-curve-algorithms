@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
-
 use std::clone::Clone;
-
 use std::ops::{Add, Sub, Neg};
+use std::fmt;
 
 
 use super::finite_fields::{Fp, IntegerAsType, Integer};
@@ -38,6 +37,14 @@ impl<E> GLPointEC<E>
             }
         }
 }
+
+impl<E> fmt::Display for GLPointEC<E>
+    where E : EllipticCurve<E>{
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "({}, {})", self.x, self.y)
+        }
+}
+
 
 impl<E> PartialEq for GLPointEC<E>
     where E : EllipticCurve<E>{
@@ -81,6 +88,17 @@ impl<E> PointEllipticCurve<E>
             PointEllipticCurve::<E>::InfPoint
         }
 }
+
+impl<E> fmt::Display for PointEllipticCurve<E>
+    where E : EllipticCurve<E>{
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self{
+                FinPoint(p) => write!(f, "FP: {}", p),
+                InfPoint => write!(f, "Infinite",),
+            }
+        }
+}
+
 
 impl<E> Clone for PointEllipticCurve<E>
     where E : EllipticCurve<E>{
