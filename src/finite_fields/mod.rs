@@ -1,6 +1,6 @@
 // p = 29
 
-extern crate gmp;
+//extern crate gmp;
 
 use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::clone::Clone;

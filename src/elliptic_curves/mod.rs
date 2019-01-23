@@ -13,7 +13,7 @@ pub struct TypeInt{
 
 impl IntegerAsType for TypeInt{
     fn value() -> Integer{
-        5
+        6569
     }
 }
 
@@ -118,7 +118,8 @@ pub trait EllipticCurve<E : EllipticCurve<E>>{
     }
 
     fn add_points(point1 : PointEllipticCurve<E>, point2 : PointEllipticCurve<E>) -> PointEllipticCurve<E>{
-        if &point2 == &E::neg_point(&point1){
+        if point2 == E::neg_point(&point1){
+            println!("Coucou\n");
             return InfPoint;
         }
 

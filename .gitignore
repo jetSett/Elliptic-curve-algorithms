@@ -1,2 +1,3 @@
 /target
 **/*.rs.bk
+elliptic_curve_algorithm.code-workspace
