@@ -4,7 +4,28 @@ use std::ops::{Add, Sub, Neg};
 use std::fmt;
 
 
-use super::finite_fields::{Fp, IntegerAsType, Integer};
+use super::finite_fields::*;
+
+#[macro_export]
+macro_rules! declare_elliptic_curve {
+    ($name: ident, $a: expr, $b: expr) => {
+        use elliptic_curves::{PointEllipticCurve, GL, EllipticCurve};
+
+        #[derive(Debug)]
+        struct $name{
+        }
+
+        impl EllipticCurve<E> for $name {
+            fn get_a_weierstrass() -> GL{
+                GL::new(1)
+            }
+            fn get_b_weierstrass() -> GL{
+                GL::new(1841)
+            }
+        }
+    }
+}
+
 
 #[derive(Debug)]
 pub struct TypeInt{
@@ -137,7 +158,6 @@ pub trait EllipticCurve<E : EllipticCurve<E>>{
 
     fn add_points(point1 : PointEllipticCurve<E>, point2 : PointEllipticCurve<E>) -> PointEllipticCurve<E>{
         if point2 == E::neg_point(&point1){
-            println!("Coucou\n");
             return InfPoint;
         }
 

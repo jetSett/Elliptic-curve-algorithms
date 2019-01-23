@@ -1,7 +1,3 @@
-// p = 29
-
-//extern crate gmp;
-
 use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::clone::Clone;
 use std::fmt;
@@ -18,6 +14,25 @@ pub trait IntegerAsType{
 pub struct Fp<N : IntegerAsType>{
     repr : Integer,
     _phantom : PhantomData<N>,
+}
+
+#[macro_export]
+macro_rules! declare_finite_field {
+    ($name: ident, $p: expr) => {
+
+        use finite_fields::{Fp, IntegerAsType, Integer};
+
+        #[derive(Debug)]
+        pub struct TypeInt{}
+
+        impl IntegerAsType for TypeInt{
+            fn value() -> Integer{
+                $p
+            }
+        }
+
+        pub type $name = Fp<TypeInt>;
+    }
 }
 
 impl<N> fmt::Display for Fp<N>
