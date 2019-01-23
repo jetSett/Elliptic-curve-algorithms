@@ -2,19 +2,18 @@
 
 extern crate gmp;
 
-use std::ops::{Add, Sub, Mul, Div};
+use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::clone::Clone;
 
 use std::marker::PhantomData;
 
 pub type Integer = i32;
 
-
-
 pub trait IntegerAsType{
     fn value() -> Integer;
 }
 
+#[derive(Debug)]
 pub struct Fp<N : IntegerAsType>{
     repr : Integer,
     _phantom : PhantomData<N>,
@@ -32,10 +31,6 @@ impl<N> Fp<N>
 
         pub fn zero() -> Fp<N>{
             Fp::new(0)
-        }
-
-        pub fn print(&self){
-            println!("{}", self.repr);
         }
 
         pub fn inv(&self) -> Fp<N>{
@@ -103,6 +98,15 @@ impl<N> Div for Fp<N>
 
         fn div(self, other: Fp<N>) -> Fp<N>{
             self*(other.inv())
+        }
+}
+
+impl<N> Neg for Fp<N>
+    where N : IntegerAsType{
+        type Output = Fp<N>;
+
+        fn neg(self) -> Fp<N>{
+            Fp::<N>::new(-self.repr)
         }
 }
 
