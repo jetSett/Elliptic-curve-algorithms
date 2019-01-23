@@ -152,7 +152,7 @@ pub trait EllipticCurve<E : EllipticCurve<E>>{
                     if p1.x != p2.x {
                         ((p2.y-p1.y)/(p2.x-p1.x), (p1.y*p2.x - p2.y*p1.x)/(p2.x-p1.x))
                     }else{
-                        ((GL::new(3)*p1.x*p1.x)/(GL::new(2)*p1.y), (-p1.x*p1.x*p1.x + a*p1.x + GL::new(2)*b)/(GL::new(2)*p1.y))
+                        ((GL::new(3)*p1.x*p1.x + a)/(GL::new(2)*p1.y), (-p1.x*p1.x*p1.x + a*p1.x + GL::new(2)*b)/(GL::new(2)*p1.y))
                     };
                 let x3 = lambda*lambda - p1.x - p2.x;
                 let y3 = -lambda*x3 - nu;
