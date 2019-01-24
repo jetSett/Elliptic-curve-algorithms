@@ -4,7 +4,7 @@ use std::fmt;
 
 use std::marker::PhantomData;
 
-pub type Integer = i32;
+pub type Integer = i64;
 
 pub trait IntegerAsType{
     fn value() -> Integer;
@@ -18,20 +18,19 @@ pub struct Fp<N : IntegerAsType>{
 
 #[macro_export]
 macro_rules! declare_finite_field {
-    ($name: ident, $p: expr) => {
+    ($name: ident, $p: expr, $m:ident) => {
+        mod $m{
+            #[derive(Debug)]
+            pub struct TypeInt{}
+        }
 
-        use finite_fields::{Fp, IntegerAsType, Integer};
-
-        #[derive(Debug)]
-        pub struct TypeInt{}
-
-        impl IntegerAsType for TypeInt{
+        impl IntegerAsType for $m::TypeInt{
             fn value() -> Integer{
                 $p
             }
         }
 
-        pub type $name = Fp<TypeInt>;
+        pub type $name = Fp<$m::TypeInt>;
     }
 }
 
@@ -138,3 +137,5 @@ impl<N> PartialEq for Fp<N>
             self.repr == other.repr
         }
 }
+
+mod test;
