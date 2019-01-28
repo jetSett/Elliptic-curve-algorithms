@@ -10,6 +10,10 @@ pub trait IntegerAsType{
     fn value() -> Integer;
 }
 
+pub trait FieldValues<K>{
+    fn from_int(n : Integer) -> K;
+}
+
 #[derive(Debug)]
 pub struct Fp<N : IntegerAsType>{
     repr : Integer,
@@ -20,15 +24,18 @@ pub struct Fp<N : IntegerAsType>{
 macro_rules! declare_finite_field {
     ($name: ident, $p: expr, $m:ident) => {
         mod $m{
+            use super::*;
+
             #[derive(Debug)]
             pub struct TypeInt{}
-        }
 
-        impl IntegerAsType for $m::TypeInt{
-            fn value() -> Integer{
-                $p
+            impl IntegerAsType for TypeInt{
+                fn value() -> Integer{
+                    $p
+                }
             }
         }
+
 
         pub type $name = Fp<$m::TypeInt>;
     }
@@ -74,6 +81,13 @@ impl<N> Fp<N>
                 t += N::value();
             }
             Fp::<N>::new(t)
+        }
+}
+
+impl<N>  FieldValues<Fp<N>> for Fp<N>
+    where N : IntegerAsType{
+        fn from_int(n : Integer) -> Fp<N> {
+            Fp::<N>::new(n)
         }
 }
 
@@ -138,4 +152,5 @@ impl<N> PartialEq for Fp<N>
         }
 }
 
+#[cfg(test)]
 mod test;

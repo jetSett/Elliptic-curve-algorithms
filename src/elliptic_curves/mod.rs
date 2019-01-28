@@ -1,229 +1,106 @@
-use std::marker::PhantomData;
-use std::clone::Clone;
-use std::ops::{Add, Sub, Neg};
+use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::fmt;
 
+use crate::finite_fields::FieldValues;
 
-use super::finite_fields::*;
-
-#[macro_export]
-macro_rules! declare_elliptic_curve {
-    ($name: ident, $a: expr, $b: expr) => {
-        use elliptic_curves::{PointEllipticCurve, GL, EllipticCurve};
-
-        #[derive(Debug)]
-        struct $name{
-        }
-
-        impl EllipticCurve<E> for $name {
-            fn get_a_weierstrass() -> GL{
-                GL::new(1)
-            }
-            fn get_b_weierstrass() -> GL{
-                GL::new(1841)
-            }
-        }
-    }
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct KPoint<K> {
+    pub x: K,
+    pub y: K,
 }
 
-
-#[derive(Debug)]
-pub struct TypeInt{
-}
-
-impl IntegerAsType for TypeInt{
-    fn value() -> Integer{
-        6569
-    }
-}
-
-pub type GL = Fp<TypeInt>;
-
-#[derive(Debug)]
-pub struct GLPointEC<E : EllipticCurve<E>>{
-    x : GL,
-    y : GL,
-
-    _phantom : PhantomData<E>
-}
-
-impl<E> GLPointEC<E>
-    where E : EllipticCurve<E>{
-        pub fn new(x : GL, y : GL) -> GLPointEC<E>{
-            GLPointEC::<E>{
-                x,
-                y,
-
-                _phantom: PhantomData
-            }
-        }
-}
-
-impl<E> fmt::Display for GLPointEC<E>
-    where E : EllipticCurve<E>{
+impl<K> fmt::Display for KPoint<K>
+    where K : fmt::Display{
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "({}, {})", self.x, self.y)
         }
 }
 
 
-impl<E> PartialEq for GLPointEC<E>
-    where E : EllipticCurve<E>{
-        fn eq(&self, other: &GLPointEC<E>) -> bool{
-            self.x == other.x && self.y == other.y
-        }
-}
-
-
-impl<E> Clone for GLPointEC<E>
-    where E : EllipticCurve<E>{
-        fn clone(&self) -> GLPointEC<E>{
-            GLPointEC::new(self.x, self.y)
-        }
-}
-
-impl<E> Copy for GLPointEC<E>
-    where E : EllipticCurve<E>{
-}
-
-#[derive(Debug)]
-pub enum PointEllipticCurve<E : EllipticCurve<E>>{
-    FinPoint(GLPointEC<E>),
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum ProjKPoint<K> {
+    FinPoint(KPoint<K>),
     InfPoint,
 }
 
-use PointEllipticCurve::{FinPoint, InfPoint};
-
-impl<E> PointEllipticCurve<E>
-    where E : EllipticCurve<E>{
-        pub fn new(x : GL, y : GL) -> PointEllipticCurve<E>{
-            PointEllipticCurve::<E>::FinPoint(GLPointEC{
-                x,
-                y,
-
-                _phantom: PhantomData
-            })
-        }
-
-        pub fn infinite() -> PointEllipticCurve<E>{
-            PointEllipticCurve::<E>::InfPoint
-        }
-}
-
-impl<E> fmt::Display for PointEllipticCurve<E>
-    where E : EllipticCurve<E>{
+impl<K> fmt::Display for ProjKPoint<K>
+    where K : fmt::Display{
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            match self{
+            use ProjKPoint::*;
+            match self {
                 FinPoint(p) => write!(f, "FP: {}", p),
-                InfPoint => write!(f, "Infinite",),
+                InfPoint => write!(f, "Inf P"),
             }
         }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct EllipticCurve<K> {
+    a: K,
+    b: K
+}
 
-impl<E> Clone for PointEllipticCurve<E>
-    where E : EllipticCurve<E>{
-        fn clone(&self) -> PointEllipticCurve<E>{
-            match self{
+impl<K> fmt::Display for EllipticCurve<K>
+    where K : fmt::Display{
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "y² = x^3 + {}*x + {}", self.a, self.b)
+        }
+}
+
+impl<K> EllipticCurve<K> 
+    where K : Add<Output=K> + Sub<Output=K> + Mul<Output=K> + Div<Output=K> + Neg<Output=K>
+     + FieldValues<K> + PartialEq + Copy{
+        pub fn new(a: K, b: K) -> EllipticCurve<K>{
+            EllipticCurve::<K>{
+                a, b
+            }
+        }
+
+        pub fn is_on_curve(&self, point : &ProjKPoint<K>) -> bool{
+            use ProjKPoint::*;
+            match point{
+                InfPoint => true,
+                FinPoint(p) =>{
+                    let x = p.x;
+                    let y = p.y;
+                    y*y == x*x*x + self.a*x + self.b
+                }
+            }
+        }
+
+        pub fn neg_point(&self, point : ProjKPoint<K>) -> ProjKPoint<K>{
+            use ProjKPoint::*;
+            match point {
                 InfPoint => InfPoint,
-                FinPoint(p) => FinPoint(*p)
+                FinPoint(p) => FinPoint(KPoint::<K>{
+                    x: p.x, y: -p.y,
+                }),
+            }
+        }
+
+        pub fn add_points(&self, point1 : ProjKPoint<K>, point2 : ProjKPoint<K>) -> ProjKPoint<K>{
+            use ProjKPoint::*;
+            let a = self.a;
+            let b = self.b;
+            if point1 == self.neg_point(point2){
+                return InfPoint;
+            }
+            match (&point1, &point2){
+                (InfPoint, _) => point2,
+                (_, InfPoint) => point1,
+                (FinPoint(p1), FinPoint(p2)) => {
+                    let (lambda, nu) = 
+                        if p1.x != p2.x {
+                            ((p2.y-p1.y)/(p2.x-p1.x), (p1.y*p2.x - p2.y*p1.x)/(p2.x-p1.x))
+                        }else{
+                            ((K::from_int(3)*p1.x*p1.x + a)/(K::from_int(2)*p1.y), (-p1.x*p1.x*p1.x + a*p1.x + K::from_int(2)*b)/(K::from_int(2)*p1.y))
+                        };
+                    let x3 = lambda*lambda - p1.x - p2.x;
+                    let y3 = -lambda*x3 - nu;
+                    FinPoint(KPoint::<K>{
+                        x: x3, y: y3
+                    })
+                }
             }
         }
 }
-
-impl<E> Copy for PointEllipticCurve<E>
-    where E : EllipticCurve<E>{
-
-}
-
-pub trait EllipticCurve<E : EllipticCurve<E>>{
-
-    fn get_a_weierstrass() -> GL;
-    fn get_b_weierstrass() -> GL;
-
-    fn is_on_curve(point : &PointEllipticCurve<E>) -> bool{
-        match point {
-            PointEllipticCurve::FinPoint(p) => {
-                let x = p.x;
-                let y = p.y;
-
-                let a = E::get_a_weierstrass();
-                let b = E::get_b_weierstrass();
-
-                y*y == x*x*x + a*x + b
-            },
-            PointEllipticCurve::InfPoint => true,
-        }
-    }
-
-    fn add_points(point1 : PointEllipticCurve<E>, point2 : PointEllipticCurve<E>) -> PointEllipticCurve<E>{
-        if point2 == E::neg_point(&point1){
-            return InfPoint;
-        }
-
-        let a = E::get_a_weierstrass();
-        let b = E::get_b_weierstrass();
-
-        match (&point1, &point2){
-            (InfPoint, _) => point2,
-            (_, InfPoint) => point1,
-            (FinPoint(p1), FinPoint(p2)) => {
-                let (lambda, nu) = 
-                    if p1.x != p2.x {
-                        ((p2.y-p1.y)/(p2.x-p1.x), (p1.y*p2.x - p2.y*p1.x)/(p2.x-p1.x))
-                    }else{
-                        ((GL::new(3)*p1.x*p1.x + a)/(GL::new(2)*p1.y), (-p1.x*p1.x*p1.x + a*p1.x + GL::new(2)*b)/(GL::new(2)*p1.y))
-                    };
-                let x3 = lambda*lambda - p1.x - p2.x;
-                let y3 = -lambda*x3 - nu;
-                FinPoint(GLPointEC::new(x3,y3))
-            }
-        }
-    }
-
-    fn neg_point(point : &PointEllipticCurve<E>) -> PointEllipticCurve<E>{
-        match point {
-            InfPoint => InfPoint,
-            FinPoint(p) => FinPoint(GLPointEC::new(p.x, -p.y)),
-        }
-    }
-}
-
-impl<E> PartialEq for PointEllipticCurve<E>
-    where E : EllipticCurve<E>{
-        fn eq(&self, other: &PointEllipticCurve<E>) -> bool{
-            match (self, other){
-                (FinPoint(p1), FinPoint(p2)) => p1 == p2,
-                (InfPoint, InfPoint) => true,
-                _ => false
-            }
-        }
-}
-
-impl<E> Add for PointEllipticCurve<E>
-    where E : EllipticCurve<E>{
-        type Output = PointEllipticCurve<E>;
-
-        fn add(self, other: PointEllipticCurve<E>) -> PointEllipticCurve<E>{
-            E::add_points(self, other)
-        }
-}
-
-impl<E> Neg for PointEllipticCurve<E>
-    where E : EllipticCurve<E>{
-        type Output = PointEllipticCurve<E>;
-
-        fn neg(self) -> PointEllipticCurve<E>{
-            E::neg_point(&self)
-        }
-}
-
-impl<E> Sub for PointEllipticCurve<E>
-    where E : EllipticCurve<E>{
-        type Output = PointEllipticCurve<E>;
-
-        fn sub(self, other: PointEllipticCurve<E>) -> PointEllipticCurve<E>{
-            E::add_points(self, -other)
-        }
-}
-

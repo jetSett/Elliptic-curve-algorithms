@@ -1,4 +1,3 @@
-#[cfg(test)]
 use super::*;
 
 declare_finite_field!(GL8001047, 8001047, m1);
@@ -15,6 +14,7 @@ fn addition_zero() {
     }
 }
 
+#[test]
 fn addition_commut() {
     for _i in 0 .. 100{
         let a = rand::random::<Integer>();
@@ -24,3 +24,4 @@ fn addition_commut() {
         assert_eq!(GL8001047::new(a) + GL8001047::new(b),GL8001047::new(b) + GL8001047::new(a));
     }
 }
+
