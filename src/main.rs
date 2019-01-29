@@ -1,8 +1,6 @@
 #![feature(type_alias_enum_variants)]
 
-extern crate rand;
-
-pub mod finite_fields;
+#[macro_use] pub mod finite_fields;
 pub mod elliptic_curves;
 
 use finite_fields::*;

@@ -49,7 +49,7 @@ impl<K> fmt::Display for EllipticCurve<K>
 
 impl<K> EllipticCurve<K> 
     where K : Add<Output=K> + Sub<Output=K> + Mul<Output=K> + Div<Output=K> + Neg<Output=K>
-     + FieldValues<K> + PartialEq + Copy{
+     + FieldValues<K> + PartialEq + Copy + fmt::Display{
         pub fn new(a: K, b: K) -> EllipticCurve<K>{
             EllipticCurve::<K>{
                 a, b
@@ -69,6 +69,7 @@ impl<K> EllipticCurve<K>
         }
 
         pub fn neg_point(&self, point : ProjKPoint<K>) -> ProjKPoint<K>{
+            assert!(self.is_on_curve(&point));
             use ProjKPoint::*;
             match point {
                 InfPoint => InfPoint,
@@ -79,6 +80,9 @@ impl<K> EllipticCurve<K>
         }
 
         pub fn add_points(&self, point1 : ProjKPoint<K>, point2 : ProjKPoint<K>) -> ProjKPoint<K>{
+            assert!(self.is_on_curve(&point1));
+            assert!(self.is_on_curve(&point1));
+
             use ProjKPoint::*;
             let a = self.a;
             let b = self.b;
@@ -103,4 +107,46 @@ impl<K> EllipticCurve<K>
                 }
             }
         }
+
+        pub fn scalar_mult(&self, n : i32, point : ProjKPoint<K>) -> ProjKPoint<K>{
+            use ProjKPoint::*;
+            let mut m = n;
+            let mut p = point;
+            let mut p1 = self.add_points(p, p);
+
+            assert!(self.is_on_curve(&point));
+            if n == 0{
+                return InfPoint;
+            }
+            if n < 0{
+                m = -m;
+                p = self.neg_point(point);
+            }
+
+            let mut logm = 0;
+            let mut m1 = m;
+            while m1 != 0{
+                m1 >>= 1;
+                logm += 1;
+            }
+
+            println!("{}, {:b}", logm, m);
+            while logm != 0{
+                let bit = (m&(1<<(logm-1)))>>(logm-1); // the current bit
+                println!("{}", bit);
+                println!("{}", p);
+                logm -= 1;
+                if bit == 0{
+                    p1 = self.add_points(p, p1);
+                    p = self.add_points(p, p);
+                }else{
+                    p = self.add_points(p, p1);
+                    p1 = self.add_points(p1, p1);
+                }
+            }
+            p
+        }
 }
+
+#[cfg(test)]
+mod test;
