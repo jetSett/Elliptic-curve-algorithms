@@ -49,7 +49,7 @@ impl<K> fmt::Display for EllipticCurve<K>
 
 impl<K> EllipticCurve<K> 
     where K : Add<Output=K> + Sub<Output=K> + Mul<Output=K> + Div<Output=K> + Neg<Output=K>
-     + FieldValues<K> + PartialEq + Copy + fmt::Display{
+     + FieldValues<K> + PartialEq + Copy{
         pub fn new(a: K, b: K) -> EllipticCurve<K>{
             EllipticCurve::<K>{
                 a, b
@@ -109,42 +109,38 @@ impl<K> EllipticCurve<K>
         }
 
         pub fn scalar_mult(&self, n : i32, point : ProjKPoint<K>) -> ProjKPoint<K>{
-            use ProjKPoint::*;
-            let mut m = n;
-            let mut p = point;
-            let mut p1 = self.add_points(p, p);
-
             assert!(self.is_on_curve(&point));
             if n == 0{
                 return InfPoint;
             }
+
             if n < 0{
-                m = -m;
-                p = self.neg_point(point);
+                return self.scalar_mult(-n, self.neg_point(point));
             }
 
-            let mut logm = 0;
-            let mut m1 = m;
-            while m1 != 0{
-                m1 >>= 1;
+            use ProjKPoint::*;
+            let mut p1 = point;
+            let mut p2 = self.add_points(p1, p1);
+
+            let mut logm = -1;
+            let mut m = n;
+            while m != 0{
+                m >>= 1;
                 logm += 1;
             }
 
-            println!("{}, {:b}", logm, m);
-            while logm != 0{
-                let bit = (m&(1<<(logm-1)))>>(logm-1); // the current bit
-                println!("{}", bit);
-                println!("{}", p);
+            while logm >= 1{
+                let bit = (n&(1<<(logm-1)))>>(logm-1); // the current bit
                 logm -= 1;
                 if bit == 0{
-                    p1 = self.add_points(p, p1);
-                    p = self.add_points(p, p);
-                }else{
-                    p = self.add_points(p, p1);
+                    p2 = self.add_points(p1, p2);
                     p1 = self.add_points(p1, p1);
+                }else{
+                    p1 = self.add_points(p1, p2);
+                    p2 = self.add_points(p2, p2);
                 }
             }
-            p
+            p1
         }
 }
 
