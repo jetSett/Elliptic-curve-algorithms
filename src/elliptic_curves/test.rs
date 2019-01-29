@@ -22,7 +22,6 @@ fn sample_point(ell : &EllipticCurve<K>) -> ProjKPoint<K>{
 fn point_addition_commut(){
     let ell = EllipticCurve::<K>::new(K::new(1), K::new(5841));
     for _i in 1..10{
-        let n = rand::random::<i32>() % 100;
         let p1 = sample_point(&ell);
         let p2 = sample_point(&ell);
         assert_eq!(ell.add_points(p1, p2), ell.add_points(p2, p1));
@@ -32,8 +31,7 @@ fn point_addition_commut(){
 #[test]
 fn point_addition_assoc(){
     let ell = EllipticCurve::<K>::new(K::new(1), K::new(5841));
-    for _i in 1..10{
-        let n = rand::random::<i32>() % 100;
+    for _i in 1..50{
         let p1 = sample_point(&ell);
         let p2 = sample_point(&ell);
         let p3 = sample_point(&ell);
@@ -41,16 +39,14 @@ fn point_addition_assoc(){
     }
 }
 
-fn trivial_scalar_mult(ell : &EllipticCurve<K>, point : ProjKPoint<K>, n : i32) -> ProjKPoint<K>{
-    let mut p = point;
-    let mut m = n;
+fn trivial_scalar_mult(ell : &EllipticCurve<K>, n : i32, point : ProjKPoint<K>) -> ProjKPoint<K>{
     if n < 0 {
-        m = -m;
-        p = ell.neg_point(p);
+        return trivial_scalar_mult(ell, -n, ell.neg_point(point));
     }
+
     let mut p2 = ProjKPoint::InfPoint;
-    for _i in 1..m{
-        p2 = ell.add_points(p2, p);
+    for _i in 1..(n+1){
+        p2 = ell.add_points(p2, point);
     }
     p2
 }
@@ -58,9 +54,11 @@ fn trivial_scalar_mult(ell : &EllipticCurve<K>, point : ProjKPoint<K>, n : i32) 
 #[test]
 fn scalar_mult_correct() {
     let ell = EllipticCurve::<K>::new(K::new(1), K::new(5841));
-    for _i in 1..10{
+    for _i in 1..50{
         let n = rand::random::<i32>() % 100;
         let p = sample_point(&ell);
-        assert_eq!(ell.scalar_mult(n, p), trivial_scalar_mult(&ell, p, n));
+        let p_trivial = trivial_scalar_mult(&ell, n, p);
+        let p_ladder = ell.scalar_mult(n, p);
+        assert_eq!(p_trivial, p_ladder);
     }
 }
