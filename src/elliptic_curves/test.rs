@@ -1,26 +1,93 @@
 use super::*;
 
 use crate::finite_fields::*;
+use crate::field::*;
 
-declare_finite_field!(K, 10169, m10169);
+const P : Integer = 10169;
+
+declare_finite_field!(K, P, m10169);
 
 fn sample_point(ell : &EllipticCurve<K>) -> ProjKPoint<K>{
-    let mut p = ProjKPoint::FinPoint(KPoint::<K>{
-        x: K::new(0), y: K::new(0)
-    });
+    let mut p = ProjKPoint::FinPoint(
+        K::new(0), K::new(0)
+    );
 
     while !(ell.is_on_curve(&p)) {
-        p = ProjKPoint::FinPoint(KPoint{
-            x: K::new(rand::random::<Integer>()),
-            y: K::new(rand::random::<Integer>()),
-        });
+        p = ProjKPoint::FinPoint(
+            K::new(rand::random::<Integer>()%P),
+            K::new(rand::random::<Integer>()%P),
+        );
     }
     p
 }
 
+fn sample_elliptic_curve() -> EllipticCurve<K>{
+    let mut ell = EllipticCurve::<K>{
+                a_1: K::from_int(rand::random::<Integer>()%P),
+                a_3: K::from_int(rand::random::<Integer>()%P),
+
+                a_2: K::from_int(rand::random::<Integer>()%P),
+                a_4: K::from_int(rand::random::<Integer>()%P),
+                a_6: K::from_int(rand::random::<Integer>()%P),
+                };
+    while ell.discriminant() == K::new(0){
+        ell = EllipticCurve::<K>{
+                    a_1: K::from_int(rand::random::<Integer>()%P),
+                    a_3: K::from_int(rand::random::<Integer>()%P),
+
+                    a_2: K::from_int(rand::random::<Integer>()%P),
+                    a_4: K::from_int(rand::random::<Integer>()%P),
+                    a_6: K::from_int(rand::random::<Integer>()%P),
+                    };
+    }
+    ell
+}
+
+#[test]
+fn test_discriminant(){
+    assert_eq!(EllipticCurve::<K>::new_reduced_weierstrass(K::new(0), K::new(0)).discriminant(), 
+                K::new(0));
+
+    assert_eq!(EllipticCurve::<K>{
+                a_1: K::from_int(0),
+                a_3: K::from_int(0),
+
+                a_2: K::from_int(1),
+                a_4: K::from_int(0),
+                a_6: K::from_int(0),
+
+                }.discriminant(), 
+                K::new(0));
+
+    //Not sure of the discr of the previous curves
+
+    // assert_eq!(EllipticCurve::<K>::new_reduced_weierstrass(K::new(-1), K::new(0)).discriminant(), 
+    //             K::new(64));
+
+    // assert_eq!(EllipticCurve::<K>::new_reduced_weierstrass(K::new(-3), K::new(3)).discriminant(), 
+    //             K::new(2160));
+}
+
+#[test]
+fn reduced_weierstrass_work() {
+    for _i in 1..10{
+        let ell = sample_elliptic_curve();
+        assert!(ell.to_reduced_weierstrass().is_reduced_weierstrass());
+    }
+}
+
+
+#[test]
+fn j_invariant_constant_weierstrass() {
+    for _i in 1..10{
+        let ell = sample_elliptic_curve();
+        assert_eq!(ell.j_invariant(), ell.to_reduced_weierstrass().j_invariant());
+    }
+}
+
 #[test]
 fn point_addition_commut(){
-    let ell = EllipticCurve::<K>::new(K::new(1), K::new(5841));
+    let ell = sample_elliptic_curve();
     for _i in 1..10{
         let p1 = sample_point(&ell);
         let p2 = sample_point(&ell);
@@ -30,8 +97,8 @@ fn point_addition_commut(){
 
 #[test]
 fn point_addition_assoc(){
-    let ell = EllipticCurve::<K>::new(K::new(1), K::new(5841));
-    for _i in 1..50{
+    let ell = sample_elliptic_curve();
+    for _i in 1..10{
         let p1 = sample_point(&ell);
         let p2 = sample_point(&ell);
         let p3 = sample_point(&ell);
@@ -53,8 +120,8 @@ fn trivial_scalar_mult(ell : &EllipticCurve<K>, n : i32, point : ProjKPoint<K>) 
 
 #[test]
 fn scalar_mult_correct() {
-    let ell = EllipticCurve::<K>::new(K::new(1), K::new(5841));
-    for _i in 1..50{
+    let ell = sample_elliptic_curve();
+    for _i in 1..10{
         let n = rand::random::<i32>() % 100;
         let p = sample_point(&ell);
         let p_trivial = trivial_scalar_mult(&ell, n, p);

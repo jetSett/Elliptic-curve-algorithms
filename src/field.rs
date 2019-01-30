@@ -13,4 +13,6 @@ pub trait Field : Sized +
                   Mul<Output=Self> +
                   Div<Output=Self> +
                   Neg<Output=Self> +
+                  PartialEq +
+                  Copy +
                   {}

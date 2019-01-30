@@ -13,16 +13,14 @@ declare_finite_field!(K, 10169, m10169);
 
 fn main() {
 
-    let ell = EllipticCurve::<K>::new(K::new(1), K::new(5841));
-    let mut p = ProjKPoint::FinPoint(KPoint::<K>{
-        x: K::new(0), y: K::new(0)
-    });
+    let ell = EllipticCurve::<K>::new_reduced_weierstrass(K::new(1), K::new(5841));
+    let mut p = ProjKPoint::FinPoint(K::new(0), K::new(0));
 
     while !(ell.is_on_curve(&p)) {
-        p = ProjKPoint::FinPoint(KPoint{
-            x: K::new(rand::random::<Integer>()),
-            y: K::new(rand::random::<Integer>()),
-        });
+        p = ProjKPoint::FinPoint(
+            K::new(rand::random::<Integer>()),
+            K::new(rand::random::<Integer>()),
+        );
     }
     
     println!("Found ! computing order...\n");
