@@ -4,14 +4,10 @@ use std::fmt;
 
 use std::marker::PhantomData;
 
-pub type Integer = i64;
+use crate::field::{Field, FieldValues, Integer};
 
 pub trait IntegerAsType{
     fn value() -> Integer;
-}
-
-pub trait FieldValues<K>{
-    fn from_int(n : Integer) -> K;
 }
 
 #[derive(Debug)]
@@ -151,6 +147,9 @@ impl<N> PartialEq for Fp<N>
             self.repr == other.repr
         }
 }
+
+impl<N> Field for Fp<N>
+    where N : IntegerAsType {}
 
 #[cfg(test)]
 mod test;

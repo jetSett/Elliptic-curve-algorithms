@@ -2,9 +2,12 @@
 
 #[macro_use] pub mod finite_fields;
 pub mod elliptic_curves;
+pub mod field;
 
 use finite_fields::*;
 use elliptic_curves::*;
+
+use field::Integer;
 
 declare_finite_field!(K, 10169, m10169);
 
@@ -17,8 +20,8 @@ fn main() {
 
     while !(ell.is_on_curve(&p)) {
         p = ProjKPoint::FinPoint(KPoint{
-            x: K::new(rand::random::<finite_fields::Integer>()),
-            y: K::new(rand::random::<finite_fields::Integer>()),
+            x: K::new(rand::random::<Integer>()),
+            y: K::new(rand::random::<Integer>()),
         });
     }
     

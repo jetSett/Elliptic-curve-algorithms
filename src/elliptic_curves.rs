@@ -1,7 +1,6 @@
-use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::fmt;
 
-use crate::finite_fields::FieldValues;
+use crate::field::{FieldValues, Field};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct KPoint<K> {
@@ -48,7 +47,7 @@ impl<K> fmt::Display for EllipticCurve<K>
 }
 
 impl<K> EllipticCurve<K> 
-    where K : Add<Output=K> + Sub<Output=K> + Mul<Output=K> + Div<Output=K> + Neg<Output=K>
+    where K : Field
      + FieldValues<K> + PartialEq + Copy{
         pub fn new(a: K, b: K) -> EllipticCurve<K>{
             EllipticCurve::<K>{
