@@ -64,7 +64,7 @@ impl<K> EllipticCurve<K>
             let b = self.a_6;
             let mut sum_a = K::from_int(0);
             let mut sum_b = K::from_int(0);
-            while let ProjKPoint::FinPoint(x_g, y_g) = g {
+            while let ProjKPoint::FinPoint(x_g, _) = g {
                 sum_a += K::from_int(3)*x_g*x_g + a;
                 sum_b += K::from_int(5)*x_g*x_g*x_g + K::from_int(3)*a*x_g + K::from_int(2)*b;
                 g = self.add_points(g, *p);
@@ -83,20 +83,15 @@ impl<K> EllipticCurve<K>
                     let mut group_point = *p;
                     let mut q_plus_ip = self.add_points(*p, q);
 
-                    while group_point != InfPoint{
+                    while let FinPoint(x_ip, y_ip) = group_point {
                         if &group_point == p{
                             return InfPoint;
                         }
-
-                        if let FinPoint(x_ip, y_ip) = group_point{
-                            if let FinPoint(x_q_plus_ip, y_q_plus_ip) = q_plus_ip{
-                                x += x_q_plus_ip - x_ip;
-                                y += y_q_plus_ip - y_ip;
-                            }else{ // If Q + iP == 0 then Q is in the subgroup
-                                return InfPoint;
-                            }
-                        }else{
-                            panic!("This should not append because of precondition");
+                        if let FinPoint(x_q_plus_ip, y_q_plus_ip) = q_plus_ip{
+                            x += x_q_plus_ip - x_ip;
+                            y += y_q_plus_ip - y_ip;
+                        }else{ // If Q + iP == 0 then Q is in the subgroup
+                            return InfPoint;
                         }
                         group_point = self.add_points(group_point, *p);
                         q_plus_ip = self.add_points(q_plus_ip, *p);

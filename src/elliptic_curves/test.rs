@@ -1,7 +1,6 @@
 use super::*;
 
 use crate::finite_fields::*;
-use crate::field::*;
 
 const P : Integer = 10169;
 
