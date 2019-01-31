@@ -84,7 +84,8 @@ impl<K> EllipticCurve<K>
                     let mut q_plus_ip = self.add_points(*p, q);
 
                     while let FinPoint(x_ip, y_ip) = group_point {
-                        if &group_point == p{
+
+                        if &group_point == &q{ // If Q == iP then Q is in the subgroup
                             return InfPoint;
                         }
                         if let FinPoint(x_q_plus_ip, y_q_plus_ip) = q_plus_ip{
