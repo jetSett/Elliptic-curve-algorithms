@@ -106,7 +106,7 @@ fn point_addition_assoc(){
     }
 }
 
-fn trivial_scalar_mult(ell : &EllipticCurve<K>, n : i32, point : ProjKPoint<K>) -> ProjKPoint<K>{
+fn trivial_scalar_mult(ell : &EllipticCurve<K>, n : Integer, point : ProjKPoint<K>) -> ProjKPoint<K>{
     if n < 0 {
         return trivial_scalar_mult(ell, -n, ell.neg_point(point));
     }
@@ -122,10 +122,34 @@ fn trivial_scalar_mult(ell : &EllipticCurve<K>, n : i32, point : ProjKPoint<K>) 
 fn scalar_mult_correct() {
     let ell = sample_elliptic_curve();
     for _i in 1..10{
-        let n = rand::random::<i32>() % 100;
+        let n = rand::random::<Integer>() % 100;
         let p = sample_point(&ell);
         let p_trivial = trivial_scalar_mult(&ell, n, p);
         let p_ladder = ell.scalar_mult(n, p);
         assert_eq!(p_trivial, p_ladder);
+    }
+}
+
+#[test]
+fn velu_isogeny_is_isogeny(){
+    for _i in 1..10{
+        let ell = sample_elliptic_curve().to_reduced_weierstrass();
+        let p = sample_point(&ell);
+
+        assert_eq!(ell.velu_projection(&p, ProjKPoint::InfPoint), ProjKPoint::InfPoint);
+    }
+}
+
+#[test]
+fn velu_isogeny_ip_kernel(){
+    for _i in 1..10{
+        let ell = sample_elliptic_curve().to_reduced_weierstrass();
+        let p = sample_point(&ell);
+
+        for _j in 1..10{
+            let n = rand::random::<Integer>()%500;
+
+            assert_eq!(ell.velu_projection(&p, ell.scalar_mult(n, p)), ProjKPoint::InfPoint);
+        }
     }
 }

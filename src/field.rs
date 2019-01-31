@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign};
 use std::marker::Sized;
 
 pub type Integer = i64;
@@ -13,6 +13,7 @@ pub trait Field : Sized +
                   Mul<Output=Self> +
                   Div<Output=Self> +
                   Neg<Output=Self> +
+                  AddAssign +
                   PartialEq +
                   Copy +
                   {}

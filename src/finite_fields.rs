@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::ops::{Add, AddAssign, Sub, Mul, Div, Neg};
 use std::clone::Clone;
 use std::fmt;
 
@@ -102,6 +102,13 @@ impl<N> Add for Fp<N>
 
         fn add(self, other: Fp<N>) -> Fp<N>{
             Fp::<N>::new((self.repr + other.repr) % N::value())
+        }
+}
+
+impl<N> AddAssign for Fp<N>
+    where N : IntegerAsType{
+        fn add_assign(&mut self, other: Fp<N>){
+            *self = Fp::<N>::new(self.repr + other.repr);
         }
 }
 
