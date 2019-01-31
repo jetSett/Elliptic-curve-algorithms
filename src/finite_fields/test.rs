@@ -25,3 +25,23 @@ fn addition_commut() {
     }
 }
 
+#[test]
+fn is_square_works(){
+    assert_eq!(GL8001047::new(-1).legendre_symbol(), -1);
+    assert_eq!(GL5483::new(-1).legendre_symbol(), -1);
+    assert_eq!(GL2::new(-1).legendre_symbol(), 1);
+
+    assert_eq!(GL8001047::new(2).legendre_symbol(), 1);
+    assert_eq!(GL5483::new(2).legendre_symbol(), -1);
+
+    for _i in 0 .. 100{
+        let a = rand::random::<Integer>();
+        if a%5483 != 0{
+            assert_eq!((GL5483::new(a)*GL5483::new(a)).legendre_symbol(), 1);
+        }
+        if a%8001047 != 0{
+            assert_eq!((GL8001047::new(a)*GL8001047::new(a)).legendre_symbol(), 1);
+        }
+
+    }
+}

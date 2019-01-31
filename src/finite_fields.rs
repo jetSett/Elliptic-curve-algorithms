@@ -57,6 +57,33 @@ impl<N> Fp<N>
             Fp::new(0)
         }
 
+        pub fn legendre_symbol(&self) -> i8{
+            let mut a = self.repr;
+            let mut m = N::value();
+            let mut t : i8= 1;
+            while a != 0{
+                while a%2 == 0{
+                    a = a/2;
+                    if m%8 == 3 || m%8 == 5{
+                        t = -t;
+                    }
+                }
+                let _c = a;
+                a = m;
+                m = _c;
+
+                if a%4 == 3 && m%4 == 3{
+                    t = -t;
+                }
+                a = a%m;
+            }
+            if m==1{
+                t
+            }else{
+                0
+            }
+        }
+
         pub fn inv(&self) -> Fp<N>{
             assert!(self.repr != 0);
             let (mut t, mut new_t) = (0, 1);
