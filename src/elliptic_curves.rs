@@ -48,6 +48,7 @@ impl<K> Display for EllipticCurve<K> where K : Field + Display{
 
 impl<K> EllipticCurve<K> 
     where K : Field{
+        // y^2 = x^3 + a*x + b
         pub fn new_reduced_weierstrass(a: K, b: K) -> EllipticCurve<K>{
             EllipticCurve::<K>{
                 a_1: K::from_int(0),
@@ -56,6 +57,19 @@ impl<K> EllipticCurve<K>
                 a_2: K::from_int(0),
                 a_4: a,
                 a_6: b,
+
+            }
+        }
+
+        // y^2 = x^3 + a*x^2 + x
+        pub fn new_montgomery(a: K) -> EllipticCurve<K>{
+            EllipticCurve::<K>{
+                a_1: K::from_int(0),
+                a_3: K::from_int(0),
+
+                a_2: a,
+                a_4: K::from_int(1),
+                a_6: K::from_int(0),
 
             }
         }

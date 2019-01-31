@@ -10,6 +10,8 @@ const P : Integer = 1021019; // NB : P = 4*L_0*...*L_{N_PRIMES-1} -1
 
 declare_finite_field!(K, P, _m);
 
+pub type PublicKey = K;
+
 pub fn check_well_defined(){
     let mut prod = 1;
     for i in 0..N_PRIMES{
@@ -18,8 +20,8 @@ pub fn check_well_defined(){
     assert_eq!(P, 4*prod-1);
 }
 
-pub fn is_supersingular(ell : &EllipticCurve<K>) -> bool{
-    while true{
+fn is_supersingular(ell : &EllipticCurve<K>) -> bool{
+    loop{
         let p = ell.efficient_sample_point(); // We test multiple point if necessary
 
         let mut d : Integer = 1;
@@ -40,7 +42,6 @@ pub fn is_supersingular(ell : &EllipticCurve<K>) -> bool{
             }
         }
     }
-    panic!("We should not arrive here");
 }
 
 #[cfg(test)]
