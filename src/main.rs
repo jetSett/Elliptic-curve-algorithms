@@ -9,7 +9,7 @@ use elliptic_curves::*;
 
 use field::*;
 
-const P : Integer = 10169;
+const P : Integer = 78539;
 
 declare_finite_field!(K, P, m10169);
 
@@ -65,21 +65,27 @@ fn trivial_order(ell: &EllipticCurve<K>, p : &ProjKPoint<K>) -> u32{
 
 fn main() {
 
-    let ell = sample_elliptic_curve().to_reduced_weierstrass();
+    let el = sample_elliptic_curve();
+
+    println!("{}", el);
+
+    let ell = el.to_reduced_weierstrass();
+
+    println!("{}", ell);
 
     let p = sample_point(&ell);
 
-    println!("Found ! computing order...\n");
+    println!("Found ! computing order...");
 
     let orderp = trivial_order(&ell, &p);
 
-    println!("\nOrder of {} : {}", p, orderp);
+    println!("Order of {} : {}", p, orderp);
 
 
     let q = sample_point(&ell);
     let orderq = trivial_order(&ell, &q);
 
-    println!("\nOrder of {} : {}", q, orderq);
+    println!("Order of {} : {}", q, orderq);
 
 
     println!("{} --> {} ({})", q, ell.velu_projection(&p, q), orderp%orderq);

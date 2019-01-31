@@ -1,6 +1,8 @@
 use std::fmt;
 
-use crate::field::{FieldValues, Field, Integer};
+use std::fmt::Display;
+
+use crate::field::{Field, Integer};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ProjKPoint<K> {
@@ -31,9 +33,19 @@ pub struct EllipticCurve<K> {
     pub a_6: K,
 }
 
+
+impl<K> Display for EllipticCurve<K> where K : Field + Display{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_reduced_weierstrass(){
+            write!(f, "y^2 = x^3 + {}*x + {}", self.a_4, self.a_6)
+        }else{
+            write!(f, "y^2 + {}*xy + {}*y = x^3 + {}*x^2 + {}*x + {}", self.a_1, self.a_3, self.a_2, self.a_4, self.a_6)
+        }
+    }
+}
+
 impl<K> EllipticCurve<K> 
-    where K : Field
-     + FieldValues<K>{
+    where K : Field{
         pub fn new_reduced_weierstrass(a: K, b: K) -> EllipticCurve<K>{
             EllipticCurve::<K>{
                 a_1: K::from_int(0),

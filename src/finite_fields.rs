@@ -4,7 +4,7 @@ use std::fmt;
 
 use std::marker::PhantomData;
 
-use crate::field::{Field, FieldValues, Integer};
+use crate::field::{Field, Integer};
 
 pub trait IntegerAsType{
     fn value() -> Integer;
@@ -80,13 +80,6 @@ impl<N> Fp<N>
         }
 }
 
-impl<N>  FieldValues<Fp<N>> for Fp<N>
-    where N : IntegerAsType{
-        fn from_int(n : Integer) -> Fp<N> {
-            Fp::<N>::new(n)
-        }
-}
-
 impl<N> Clone for Fp<N>
     where N : IntegerAsType{
         fn clone(&self) -> Fp<N>{
@@ -156,7 +149,11 @@ impl<N> PartialEq for Fp<N>
 }
 
 impl<N> Field for Fp<N>
-    where N : IntegerAsType {}
+    where N : IntegerAsType {
+        fn from_int(n : Integer) -> Fp<N> {
+            Fp::<N>::new(n)
+        }
+    }
 
 #[cfg(test)]
 mod test;
