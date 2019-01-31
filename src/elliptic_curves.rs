@@ -25,7 +25,7 @@ impl<K> fmt::Display for ProjKPoint<K>
 
 
 // y^2 + a_1 xy + a_3 y = x^3 + a_2 x^2 + a_4 x + a_6
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct EllipticCurve<K> {
     pub a_1: K,
     pub a_3: K,

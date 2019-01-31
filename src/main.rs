@@ -4,6 +4,8 @@
 pub mod elliptic_curves;
 pub mod field;
 
+mod csidh;
+
 use finite_fields::*;
 use elliptic_curves::*;
 
