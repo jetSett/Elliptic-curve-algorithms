@@ -7,17 +7,21 @@ const P : Integer = 10169;
 declare_finite_field!(K, P, m10169);
 
 fn sample_point(ell : &EllipticCurve<K>) -> ProjKPoint<K>{
-    let mut p = ProjKPoint::FinPoint(
-        K::new(0), K::new(0)
-    );
-
-    while !(ell.is_on_curve(&p)) {
-        p = ProjKPoint::FinPoint(
-            K::new(rand::random::<Integer>()%P),
-            K::new(rand::random::<Integer>()%P),
+    if ell.is_reduced_weierstrass(){
+        ell.efficient_sample_point()
+    }else{
+        let mut p = ProjKPoint::FinPoint(
+            K::new(0), K::new(0)
         );
+
+        while !(ell.is_on_curve(&p)) {
+            p = ProjKPoint::FinPoint(
+                K::new(rand::random::<Integer>()%P),
+                K::new(rand::random::<Integer>()%P),
+            );
+        }
+        p
     }
-    p
 }
 
 fn sample_elliptic_curve() -> EllipticCurve<K>{
@@ -43,7 +47,7 @@ fn sample_elliptic_curve() -> EllipticCurve<K>{
 }
 
 #[test]
-fn test_discriminant(){
+fn test_discriminant_zero(){
     assert_eq!(EllipticCurve::<K>::new_reduced_weierstrass(K::new(0), K::new(0)).discriminant(), 
                 K::new(0));
 
@@ -57,14 +61,6 @@ fn test_discriminant(){
 
                 }.discriminant(), 
                 K::new(0));
-
-    //Not sure of the discr of the previous curves
-
-    // assert_eq!(EllipticCurve::<K>::new_reduced_weierstrass(K::new(-1), K::new(0)).discriminant(), 
-    //             K::new(64));
-
-    // assert_eq!(EllipticCurve::<K>::new_reduced_weierstrass(K::new(-3), K::new(3)).discriminant(), 
-    //             K::new(2160));
 }
 
 #[test]

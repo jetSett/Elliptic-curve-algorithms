@@ -4,6 +4,8 @@ use std::fmt::Display;
 
 use crate::field::{Field, Integer};
 
+pub mod fp_elliptic_curves;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ProjKPoint<K> {
     FinPoint(K, K),

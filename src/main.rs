@@ -13,20 +13,6 @@ const P : Integer = 78539;
 
 declare_finite_field!(K, P, m10169);
 
-fn sample_point(ell : &EllipticCurve<K>) -> ProjKPoint<K>{
-    let mut p = ProjKPoint::FinPoint(
-        K::new(0), K::new(0)
-    );
-
-    while !(ell.is_on_curve(&p)) {
-        p = ProjKPoint::FinPoint(
-            K::new(rand::random::<Integer>()),
-            K::new(rand::random::<Integer>()),
-        );
-    }
-    p
-}
-
 fn sample_elliptic_curve() -> EllipticCurve<K>{
     let mut ell = EllipticCurve::<K>{
                 a_1: K::from_int(rand::random::<Integer>()%P),
@@ -73,7 +59,7 @@ fn main() {
 
     println!("{}", ell);
 
-    let p = sample_point(&ell);
+    let p = ell.efficient_sample_point();
 
     println!("Found ! computing order...");
 
@@ -82,7 +68,7 @@ fn main() {
     println!("Order of {} : {}", p, orderp);
 
 
-    let q = sample_point(&ell);
+    let q = ell.efficient_sample_point();
     let orderq = trivial_order(&ell, &q);
 
     println!("Order of {} : {}", q, orderq);
