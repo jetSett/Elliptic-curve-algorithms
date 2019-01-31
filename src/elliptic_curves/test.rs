@@ -153,3 +153,18 @@ fn velu_isogeny_ip_kernel(){
         }
     }
 }
+
+#[test]
+fn velu_formula_match_isogeny(){
+    for _i in 1..10{
+        let ell = sample_elliptic_curve().to_reduced_weierstrass();
+        let p = sample_point(&ell);
+
+        let ell_velu = ell.velu_curve(&p);
+
+        for _j in 1..10{
+            let q = sample_point(&ell);
+            assert!(ell_velu.is_on_curve(&ell.velu_projection(&p, q)));
+        }
+    }
+}

@@ -59,7 +59,17 @@ impl<K> EllipticCurve<K>
             if !self.is_reduced_weierstrass(){
                 panic!("VELU formula must be used only with curves in reduced form");
             }
-            EllipticCurve::new_reduced_weierstrass(self.a_1, self.a_2)
+            let mut g = *p;
+            let a = self.a_4;
+            let b = self.a_6;
+            let mut sum_a = K::from_int(0);
+            let mut sum_b = K::from_int(0);
+            while let ProjKPoint::FinPoint(x_g, y_g) = g {
+                sum_a += K::from_int(3)*x_g*x_g + a;
+                sum_b += K::from_int(5)*x_g*x_g*x_g + K::from_int(3)*a*x_g + K::from_int(2)*b;
+                g = self.add_points(g, *p);
+            }
+            EllipticCurve::new_reduced_weierstrass(a - K::from_int(5)*sum_a, b - K::from_int(7)*sum_b)
         }
 
         // Send the point q to the VELU curve of p
