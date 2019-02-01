@@ -59,7 +59,7 @@ fn main() {
 
     println!("{}", ell);
 
-    let p = ell.efficient_sample_point();
+    let p = ell.sample_point();
 
     println!("Found ! computing order...");
 
@@ -68,7 +68,7 @@ fn main() {
     println!("Order of {} : {}", p, orderp);
 
 
-    let q = ell.efficient_sample_point();
+    let q = ell.sample_point();
     let orderq = trivial_order(&ell, &q);
 
     println!("Order of {} : {}", q, orderq);
