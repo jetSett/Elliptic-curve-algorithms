@@ -102,6 +102,10 @@ impl<K> EllipticCurve<K>
 
         // Send the point q to the VELU curve of p
         pub fn velu_projection(&self, p : &ProjKPoint<K>, q : ProjKPoint<K>) -> ProjKPoint<K>{
+            if !self.is_reduced_weierstrass(){
+                panic!("VELU formula must be used only with curves in reduced form");
+            }
+
             use ProjKPoint::*;
             match q{
                 InfPoint => InfPoint,
