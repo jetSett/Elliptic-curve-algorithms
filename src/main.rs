@@ -6,22 +6,16 @@ pub mod field;
 
 mod csidh;
 
-use finite_fields::*;
-use elliptic_curves::*;
-
-use field::*;
-
 use csidh::PublicKey;
 
 fn main() {
-    let ell0 = EllipticCurve::new_montgomery(PublicKey::new(0));
+    let mut pk = PublicKey::new(0);
 
-    let pk = PublicKey::new(0);
-
-    println!("{}", csidh::verify_public_key(pk));
+    println!("Before class group action: valid={}", csidh::verify_public_key(pk));
 
     let e = vec![3, -5, 1, 2, -8, 3];
 
-    csidh::class_group_action(pk, e);
+    pk = csidh::class_group_action(pk, e);
 
+    println!("After class group action: valid={}", csidh::verify_public_key(pk));
 }

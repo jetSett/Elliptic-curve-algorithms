@@ -60,19 +60,6 @@ impl<K> EllipticCurve<K>
             }
         }
 
-        // y^2 = x^3 + a*x^2 + x
-        pub fn new_montgomery(a: K) -> EllipticCurve<K>{
-            EllipticCurve::<K>{
-                a_1: K::from_int(0),
-                a_3: K::from_int(0),
-
-                a_2: a,
-                a_4: K::from_int(1),
-                a_6: K::from_int(0),
-
-            }
-        }
-
         pub fn is_reduced_weierstrass(&self) -> bool{
             self.a_1 == K::from_int(0) && self.a_2 == K::from_int(0) && self.a_3 == K::from_int(0)
         }

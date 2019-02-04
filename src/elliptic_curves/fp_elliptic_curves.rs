@@ -6,29 +6,37 @@ use super::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct UnsignedProjPoint<K : FiniteField>{
-    x: K,
-    z: K,
+    pub x: K,
+    pub z: K,
 }
 
 impl<K : FiniteField> UnsignedProjPoint<K> {
-    fn infinite_point() -> UnsignedProjPoint<K>{
+    pub fn infinite_point() -> UnsignedProjPoint<K>{
         UnsignedProjPoint{
             x: K::from_int(1), 
             z: K::from_int(0),
         }
     }
 
-    fn finite_point(x : K) -> UnsignedProjPoint<K>{
+    pub fn finite_point(x : K) -> UnsignedProjPoint<K>{
         UnsignedProjPoint{
             x,
             z: K::from_int(1),
         }
     }
 
-    fn order_two() -> UnsignedProjPoint<K>{
+    pub fn order_two() -> UnsignedProjPoint<K>{
         UnsignedProjPoint{
             x: K::from_int(0),
             z: K::from_int(1),
+        }
+    }
+
+    pub fn normalize(self) -> UnsignedProjPoint<K>{
+        if self.z == K::from_int(0){
+            Self::infinite_point()
+        }else{
+            Self::finite_point(self.x/self.z)
         }
     }
 }
@@ -46,8 +54,6 @@ impl<K> PartialEq for UnsignedProjPoint<K> where K : FiniteField {
             }
         }
     }
-
-
 }
 
 impl<K> fmt::Display for UnsignedProjPoint<K>
@@ -98,6 +104,10 @@ impl<K> EllipticCurve<K>
             ProjKPoint::FinPoint(x, f(x).square_root())
         }
 
+        pub fn sample_unsigned(&self) -> UnsignedProjPoint<K>{
+            Self::unsigne_point(self.sample_point())
+        }
+
         pub fn unsigne_point(p : ProjKPoint<K>) -> UnsignedProjPoint<K>{
             match p{
                 ProjKPoint::InfPoint => UnsignedProjPoint::infinite_point(),
@@ -105,7 +115,7 @@ impl<K> EllipticCurve<K>
             }
         }
 
-        fn x_add(&self, p : UnsignedProjPoint<K>, q : UnsignedProjPoint<K>, p_minus_q : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
+        pub fn x_add(&self, p : UnsignedProjPoint<K>, q : UnsignedProjPoint<K>, p_minus_q : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
             let u = (p.x-p.z)*(q.x+q.z);
             let v = (p.x+p.z)*(q.x-q.z);
 
@@ -115,7 +125,7 @@ impl<K> EllipticCurve<K>
             }
         }
 
-        fn x_dbl(&self, p : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
+        pub fn x_dbl(&self, p : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
             let a = self.a_2;
             let q = (p.x + p.z)*(p.x + p.z);
             let r = (p.x - p.z)*(p.x - p.z);

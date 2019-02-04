@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign};
+use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, MulAssign, DivAssign, SubAssign};
 use std::fmt::Display;
 use std::marker::Sized;
 
@@ -11,6 +11,9 @@ pub trait Field : Sized +
                   Div<Output=Self> +
                   Neg<Output=Self> +
                   AddAssign +
+                  MulAssign +
+                  DivAssign +
+                  SubAssign +
                   PartialEq +
                   Copy +
                   Display
