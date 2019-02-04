@@ -46,13 +46,46 @@ fn is_supersingular(ell : &EllipticCurve<K>) -> bool{
     }
 }
 
-fn velu_projection_montgomery(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>, q : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
+fn order_naive(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>) -> u32{
     assert!(ell.is_montgomery());
-    let mut t = *p; // = [i]p will iterate over elements of <p>
-    let mut t_minus_1 = UnsignedProjPoint::infinite_point();
 
-    let mut projection_x = q.x;
-    let mut projection_z = q.z;
+    let p_normalized = (*p).normalize();
+
+
+    let mut order : u32 = 2;
+
+    // we start at i = 2 because of special doubling case
+    let mut t = ell.x_dbl(p_normalized); // t = [i]p will iterate over elements of <p>
+    // println!("{}", t);
+
+    let mut t_minus_1 = p_normalized;
+
+    while t != UnsignedProjPoint::infinite_point(){
+        order += 1;
+
+        let _temp = t;
+        t = ell.x_add(t, *p, t_minus_1);
+        t_minus_1 = _temp;
+    }
+
+    order
+}
+
+
+fn velu_projection_montgomery(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>, mut q : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
+    assert!(ell.is_montgomery());
+
+    let p_normalized = (*p).normalize();
+    q = q.normalize();
+
+    let mut projection_x = (q.x*p_normalized.x - K::from_int(1));
+    let mut projection_z = (q.x - p_normalized.x);
+
+    // we start at i = 2 because of special doubling case
+    let mut t = ell.x_dbl(p_normalized); // t = [i]p will iterate over elements of <p>
+
+    let mut t_minus_1 = p_normalized;
+
 
     while t != UnsignedProjPoint::infinite_point(){
         t = t.normalize();
@@ -65,7 +98,7 @@ fn velu_projection_montgomery(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>
     }
 
     UnsignedProjPoint{
-        x: projection_x,
+        x: q.x*projection_x,
         z: projection_z
     }
 }
@@ -82,7 +115,6 @@ fn velu_formula_montgomery(ell : &EllipticCurve<K>, point : &UnsignedProjPoint<K
 
     // we start at i = 2 because of special doubling case
     let mut t = ell.x_dbl(p_normalized); // t = [i]p will iterate over elements of <p>
-    // println!("{}", t);
 
     let mut t_minus_1 = p_normalized;
 
@@ -97,8 +129,6 @@ fn velu_formula_montgomery(ell : &EllipticCurve<K>, point : &UnsignedProjPoint<K
         t = t.normalize();
         t_minus_1 =t_minus_1.normalize();
         
-        // println!("{}", t);
-
         pi *= t.x;
         sigma += t.x - K::from_int(1)/t.x;
 
@@ -126,12 +156,13 @@ pub fn class_group_action(pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
     }
 
     let mut ell = EllipticCurve::new_montgomery(pk);
-    println!("{}", ell);
 
     while sum_abs > 0{
         let x = K::new(rng.gen_range(0, P-1));
         let s = (x*x*x + pk*x*x + x).legendre_symbol();
+
         let uns_p = UnsignedProjPoint::finite_point(x);
+
         let mut s_vec = vec!();
         let mut k = 1;
 
@@ -159,18 +190,17 @@ pub fn class_group_action(pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
 
             q_point = velu_projection_montgomery(&ell, &r_point, q_point);
             ell = match velu_formula_montgomery(&ell, &r_point){
-                Err(()) => continue,
+                Err(()) => {
+                    continue;
+                    },
                 Ok(ell_) => ell_,
             };
-
-            println!("{}", ell);
 
             assert!(is_supersingular(&ell));
 
             k /= L[i];
             e[i] -= s;
             sum_abs -= 1;
-            println!("{}", sum_abs);
 
             a = ell.a_2;
         }
