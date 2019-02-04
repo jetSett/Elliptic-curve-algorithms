@@ -244,7 +244,6 @@ impl<N> FiniteField for Fp<N>
             let mut s = 0;
             while t%2 == 0{ // represent p-1 = t*2^s
                 s += 1;
-                println!("{}", t);
                 t >>= 1;
             }
 
