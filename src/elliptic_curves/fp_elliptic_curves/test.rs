@@ -40,10 +40,13 @@ fn x_add_coincide(){
             let p1_uns = EllipticCurve::unsigne_point(p1); 
             let p2_uns = EllipticCurve::unsigne_point(p2); 
             let p_plus_uns = EllipticCurve::unsigne_point(p_plus); 
-            let p_moins_uns = EllipticCurve::unsigne_point(p_moins); 
+            let p_moins_uns = EllipticCurve::unsigne_point(p_moins);
 
-            assert_eq!(ell.x_add(p1_uns, p2_uns, p_moins_uns), 
-                       p_plus_uns);
+            if p1_uns != p2_uns && p_moins_uns != UnsignedProjPoint::order_two(){
+                assert_eq!(ell.x_add(p1_uns, p2_uns, p_moins_uns), 
+                        p_plus_uns);
+
+                }
         }
     }
 }

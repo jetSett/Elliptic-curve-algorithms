@@ -24,6 +24,13 @@ impl<K : FiniteField> UnsignedProjPoint<K> {
             z: K::from_int(1),
         }
     }
+
+    fn order_two() -> UnsignedProjPoint<K>{
+        UnsignedProjPoint{
+            x: K::from_int(0),
+            z: K::from_int(1),
+        }
+    }
 }
 
 impl<K> PartialEq for UnsignedProjPoint<K> where K : FiniteField {
@@ -41,8 +48,17 @@ impl<K> PartialEq for UnsignedProjPoint<K> where K : FiniteField {
     }
 }
 
+impl<K> fmt::Display for UnsignedProjPoint<K>
+    where K : fmt::Display + FiniteField{
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "[{} : {}]", self.x, self.z)
+        }
+}
+
+
+
 impl<K> EllipticCurve<K>
-    where K : FiniteField{
+    where K : FiniteField + fmt::Display{
     
         fn left_side_empty(&self) -> bool{
             self.a_1 == K::from_int(0) && self.a_3 == K::from_int(0)
@@ -120,7 +136,6 @@ impl<K> EllipticCurve<K>
             
             let mut logm = 0;
             let mut m = n;
-            // println!("{:b}", m);
             while m != 0{
                 m >>= 1;
                 logm += 1;
@@ -141,16 +156,17 @@ impl<K> EllipticCurve<K>
             };
 
             while logm >= 1{
-                let bit = K::from_int((n&(1<<(logm-1)))>>(logm-1)); // the current bit
-                // println!("{}", bit);
+                let bit = (n&(1<<(logm-1)))>>(logm-1); // the current bit
                 logm -= 1;
 
-                let  (mut a, mut b) = cond_swap(bit, x0, x1);
-                a = self.x_dbl(a);
+                let  (a, mut b) = cond_swap(K::from_int(bit), x0, x1);
+
+                let a1 = self.x_dbl(a);
                 b = self.x_add(a, b, point);
-                let (_a, _b) = cond_swap(bit, a, b);
-                x0 = a;
-                x1 = b;
+
+                let (_a, _b) = cond_swap(K::from_int(bit), a1, b);
+                x0 = _a;
+                x1 = _b;
             }
             x0            
         }
