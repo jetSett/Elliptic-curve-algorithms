@@ -159,12 +159,12 @@ impl<K> EllipticCurve<K>
                 let bit = (n&(1<<(logm-1)))>>(logm-1); // the current bit
                 logm -= 1;
 
-                let  (a, mut b) = cond_swap(K::from_int(bit), x0, x1);
+                let  (mut a, mut b) = cond_swap(K::from_int(bit), x0, x1);
 
-                let a1 = self.x_dbl(a);
                 b = self.x_add(a, b, point);
+                a = self.x_dbl(a);
 
-                let (_a, _b) = cond_swap(K::from_int(bit), a1, b);
+                let (_a, _b) = cond_swap(K::from_int(bit), a, b);
                 x0 = _a;
                 x1 = _b;
             }
