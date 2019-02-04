@@ -57,7 +57,6 @@ impl<K> EllipticCurve<K>
                 a_2: K::from_int(0),
                 a_4: a,
                 a_6: b,
-
             }
         }
 

@@ -9,9 +9,9 @@ declare_finite_field!(GL2, 2, m2);
 fn addition_zero() {
     for _i in 0 .. 100{
         let a = rand::random::<Integer>();
-        assert_eq!(GL2::new(a) + GL2::zero(), GL2::new(a));
-        assert_eq!(GL5483::new(a) + GL5483::zero(), GL5483::new(a));
-        assert_eq!(GL8001047::new(a) + GL8001047::zero(),GL8001047::new(a));
+        assert_eq!(GL2::new(a) + GL2::from_int(0), GL2::new(a));
+        assert_eq!(GL5483::new(a) + GL5483::from_int(0), GL5483::new(a));
+        assert_eq!(GL8001047::new(a) + GL8001047::from_int(0),GL8001047::new(a));
     }
 }
 

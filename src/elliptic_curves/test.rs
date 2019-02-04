@@ -8,7 +8,7 @@ declare_finite_field!(K, P, m10169);
 
 fn sample_point(ell : &EllipticCurve<K>) -> ProjKPoint<K>{
     if ell.is_reduced_weierstrass(){
-        ell.efficient_sample_point()
+        ell.sample_point()
     }else{
         let mut p = ProjKPoint::FinPoint(
             K::new(0), K::new(0)
