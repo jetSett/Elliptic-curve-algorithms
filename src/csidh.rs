@@ -5,7 +5,7 @@ use crate::field::*;
 use crate::elliptic_curves::*;
 use crate::elliptic_curves::fp_elliptic_curves::*;
 
-const N_PRIMES : usize = 6;
+const N_PRIMES : usize = 13;
 
 pub type Integer = gmp::mpz::Mpz;
 
@@ -16,11 +16,11 @@ pub struct CSIDHInstance{
     pub p: Integer,
 }
 
-declare_finite_field!(K, Integer, Integer::from(1021019), _m);
+declare_finite_field!(K, Integer, Integer::from_str_radix("37118532150319619", 10).unwrap(), _m);
 
 pub type PublicKey = K;
 
-pub type SecretKey =  [i32; N_PRIMES];
+pub type SecretKey =  Vec<i32>;
 
 pub fn check_well_defined(inst : &CSIDHInstance){
     let L = &inst.l;
@@ -85,73 +85,72 @@ fn order_naive(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>) -> Integer{
     order
 }
 
-
-fn velu_projection_montgomery(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>, mut q : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
+fn isogeny(ell : &EllipticCurve<K>, point : &UnsignedProjPoint<K>, mut q : UnsignedProjPoint<K>, k : Integer) -> Result<(EllipticCurve<K>, UnsignedProjPoint<K>), ()>{
     assert!(ell.is_montgomery());
-
-    let p_normalized = p.clone().normalize();
-    q = q.normalize();
-
-    let mut projection_x = &q.x*&p_normalized.x - K::from_int(1);
-    let mut projection_z = &q.x - &p_normalized.x;
-
-    // we start at i = 2 because of special doubling case
-    let mut t = ell.x_dbl(p_normalized.clone()); // t = [i]p will iterate over elements of <p>
-    let mut t_minus_1 = p_normalized;
-
-
-    while t != UnsignedProjPoint::infinite_point(){
-        t = t.normalize();
-        projection_x *= &t.x*&q.x - K::from_int(1);
-        projection_z *= &q.x - &t.x;
-
-        let _temp = t.clone();
-        t = ell.x_add(t, p.clone(), t_minus_1);
-        t_minus_1 = _temp;
-    }
-
-    UnsignedProjPoint{
-        x: q.x*projection_x,
-        z: projection_z
-    }
-}
-
-fn velu_formula_montgomery(ell : &EllipticCurve<K>, point : &UnsignedProjPoint<K>) -> Result<EllipticCurve<K>, ()>{
-    assert!(ell.is_montgomery());
-
-    if point.x == K::from_int(0){
-        return Err(());
-    }
+    assert!(k>=Integer::from(3));
+    assert!(&k%2 != Integer::from(0));
 
     let p_normalized = point.clone().normalize();
+    let p = point.clone();
+    q = q.normalize();
+
 
     // we start at i = 2 because of special doubling case
-    let mut t = ell.x_dbl(p_normalized.clone()); // t = [i]p will iterate over elements of <p>
+    let mut t = p_normalized.clone();  // t = [i]p will iterate over elements of <p>
+    let mut t_minus_1 = UnsignedProjPoint::infinite_point();
 
-    let mut t_minus_1 = p_normalized.clone();
+    let mut pi = UnsignedProjPoint::finite_point(K::from_int(1));
+    let mut sigma = K::from_int(0);
+    let mut projection_x = K::from_int(1);
+    let mut projection_z = K::from_int(1);
 
-    let mut pi = p_normalized.x.clone();
-    let mut sigma = p_normalized.x.clone() - K::from_int(1)/p_normalized.x.clone();
-
-    while t != UnsignedProjPoint::infinite_point(){
-        if t.x == K::from_int(0){
+    let mut i = Integer::from(1);
+    while &Integer::from(2)*&i < k{
+    //     println!("{}", t);
+    // while t != UnsignedProjPoint::infinite_point(){
+        if t.x == K::from_int(0){ // point of order 2
             return Err(());
         }
 
-        t = t.normalize();
-        t_minus_1 =t_minus_1.normalize();
-        
-        pi *= t.x.clone();
-        sigma += t.x.clone() - K::from_int(1)/t.x.clone();
+        pi.x *= t.x.clone();
+        pi.x *= t.x.clone();
 
-        let _temp = t.clone();
-        t = ell.x_add(t, p_normalized.clone(), t_minus_1);
-        t_minus_1 = _temp;
+        pi.z *= t.z.clone();
+        pi.z *= t.z.clone();
+
+        let s = t.x.clone()/t.z.clone() - t.z.clone()/t.x.clone();
+
+        sigma += K::from_int(2)*s;
+
+        let px = &t.x*&q.x - t.z.clone();
+        let pz = &q.x*&t.z - t.x.clone();
+
+        projection_x *= px.clone()*px;
+        projection_z *= pz.clone()*pz;
+
+        if i == Integer::from(1){
+            let _temp = t.clone();
+            t = ell.x_dbl(p.clone());
+            t_minus_1 = _temp;
+        }else{
+            let _temp = t.clone();
+            t = ell.x_add(t, p.clone(), t_minus_1);
+            t_minus_1 = _temp;
+        }
+        i += Integer::from(1);
     }
 
-    Ok(EllipticCurve::new_montgomery(pi*(&ell.a_2 - &(K::from_int(3)*sigma))))
+    pi = pi.normalize();
+    Ok((
+        EllipticCurve::new_montgomery(pi.x*(&ell.a_2 - &(K::from_int(3)*sigma))),
+        UnsignedProjPoint{
+                x: q.x*projection_x,
+                z: projection_z
+            }
+    ))
 
 }
+
 
 pub fn verify_public_key(inst : &CSIDHInstance, pk : PublicKey) -> bool{
     is_supersingular(inst, &EllipticCurve::new_montgomery(pk))
@@ -209,13 +208,16 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
                 continue;
             }
 
-            q_point = velu_projection_montgomery(&ell, &r_point, q_point);
-            ell = match velu_formula_montgomery(&ell, &r_point){
+            let (ell_, q_point_) = match isogeny(&ell, &r_point, q_point.clone(), L[i].clone()){
                 Err(()) => {
+                    println!("Erreur");
                     continue;
                     },
-                Ok(ell_) => ell_,
+                Ok(pair) => pair
             };
+
+            ell = ell_;
+            q_point = q_point_;
 
             assert!(is_supersingular(inst, &ell));
             sk[i] -= s as i32;
@@ -230,12 +232,12 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
 
 pub fn sample_keys(inst : &CSIDHInstance, m : i32) -> (PublicKey, SecretKey){
     let mut rng = rand::thread_rng();
-    let mut sk : SecretKey = [0, 0, 0, 0, 0, 0];
-    for i in 0..N_PRIMES{
-        sk[i] = rng.gen_range(-m, m) as i32;
+    let mut sk : SecretKey = vec!();
+    for _i in 0..N_PRIMES{
+        sk.push(rng.gen_range(-m, m) as i32);
     }
 
-    let pk = class_group_action(inst, PublicKey::from_int(0), sk);
+    let pk = class_group_action(inst, PublicKey::from_int(0), sk.clone());
     (pk, sk)
 }
 

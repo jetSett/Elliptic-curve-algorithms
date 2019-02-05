@@ -11,13 +11,17 @@ mod csidh;
 use csidh::*;
 
 fn main() {
-    let gen_param = 1;
+    let gen_param = 2;
 
     let mut current : u64;
 
     let inst = CSIDHInstance{ 
-        p: Integer::from(1021019),
-        l: [Integer::from(3), Integer::from(5), Integer::from(7), Integer::from(11), Integer::from(13), Integer::from(17)]
+        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
+        l:[Integer::from(3),Integer::from(5),Integer::from(7),
+                Integer::from(11),Integer::from(13),Integer::from(17),
+                Integer::from(19),Integer::from(23),Integer::from(29),
+                Integer::from(31),Integer::from(37),Integer::from(41),
+                Integer::from(61)]
     };
 
     check_well_defined(&inst);
