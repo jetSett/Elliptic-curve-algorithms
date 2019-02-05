@@ -44,12 +44,12 @@ impl<K : FiniteField> UnsignedProjPoint<K> {
 impl<K> PartialEq for UnsignedProjPoint<K> where K : FiniteField {
     fn eq(&self, other: &UnsignedProjPoint<K>) -> bool{
         match self.z == K::from_int(0){
-            true => other.z == K::from_int(0),
+            true => &other.z == &K::from_int(0),
             false => {
-                if other.z==K::from_int(0){
+                if &other.z==&K::from_int(0){
                     false
                 }else{
-                    other.x/other.z == self.x/self.z
+                    other.x.clone()*self.z.clone() == self.x.clone()*other.z.clone()
                 }
             }
         }
@@ -94,13 +94,13 @@ impl<K> EllipticCurve<K>
             let sample_element = | |{ K::new(K::Integer::sample_uniform(&K::Integer::from(0), &(K::cardinal()-K::Integer::from(1)))) };
             let mut x = sample_element();
 
-            let f = |x| {
-                x*x*x + self.a_2*x*x + self.a_4*x + self.a_6
+            let f = |x : K| {
+                x.clone()*x.clone()*x.clone() + self.a_2.clone()*x.clone()*x.clone() + self.a_4.clone()*x + self.a_6.clone()
             };
-            while f(x).legendre_symbol() != 1{
+            while f(x.clone()).legendre_symbol() != 1{
                 x = sample_element();
             }
-            ProjKPoint::FinPoint(x, f(x).square_root())
+            ProjKPoint::FinPoint(x.clone(), f(x).square_root())
         }
 
         pub fn sample_unsigned(&self) -> UnsignedProjPoint<K>{
@@ -115,23 +115,31 @@ impl<K> EllipticCurve<K>
         }
 
         pub fn x_add(&self, p : UnsignedProjPoint<K>, q : UnsignedProjPoint<K>, p_minus_q : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
-            let u = (p.x-p.z)*(q.x+q.z);
+            let u = (p.x.clone()-p.z.clone())*(q.x.clone()+q.z.clone());
             let v = (p.x+p.z)*(q.x-q.z);
 
+            let x = (u.clone()+v.clone());
+            let z = (u-v);
+
             UnsignedProjPoint{
-                x: p_minus_q.z*(u+v)*(u+v),
-                z: p_minus_q.x*(u-v)*(u-v),
+                x: p_minus_q.z*x.clone()*x,
+                z: p_minus_q.x*z.clone()*z,
             }
         }
 
         pub fn x_dbl(&self, p : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
-            let a = self.a_2;
-            let q = (p.x + p.z)*(p.x + p.z);
-            let r = (p.x - p.z)*(p.x - p.z);
-            let s = q - r;
+            let a = self.a_2.clone();
+            let mut q = (p.x.clone() + p.z.clone());
+            q = q.clone()*q;
+
+            let mut r = (p.x - p.z);
+            r = r.clone()*r;
+
+            let s = q.clone() - r.clone();
+
             UnsignedProjPoint{
-                x: q*r,
-                z: s*(r + s*(a + K::from_int(2))/K::from_int(4) )
+                x: q*r.clone(),
+                z: s.clone()*(r + s*(a + K::from_int(2))/K::from_int(4) )
             }
         }
 
@@ -146,36 +154,36 @@ impl<K> EllipticCurve<K>
             }
             
             let mut logm = 0;
-            let mut m = n;
+            let mut m = n.clone();
             while m != K::Integer::from(0){
                 m >>= 1;
                 logm += 1;
             }
 
             let mut x0 = UnsignedProjPoint::infinite_point();
-            let mut x1 = point;
+            let mut x1 = point.clone();
 
             let cond_swap = |b: K, x0: UnsignedProjPoint<K>, x1: UnsignedProjPoint<K>| {
                 (UnsignedProjPoint{
-                    x: (K::from_int(1)-b)*x0.x + b*x1.x, 
-                    z: (K::from_int(1)-b)*x0.z + b*x1.z, 
+                    x: (K::from_int(1)-b.clone())*x0.x.clone() + b.clone()*x1.x.clone(), 
+                    z: (K::from_int(1)-b.clone())*x0.z.clone() + b.clone()*x1.z.clone(), 
                 }, 
                 UnsignedProjPoint{
-                    x: (K::from_int(1)-b)*x1.x + b*x0.x,
-                    z: (K::from_int(1)-b)*x1.z + b*x0.z,
+                    x: (K::from_int(1)-b.clone())*x1.x.clone() + b.clone()*x0.x.clone(),
+                    z: (K::from_int(1)-b.clone())*x1.z.clone() + b.clone()*x0.z.clone(),
                 })
             };
 
             while logm >= 1{
-                let bit = (n&(K::Integer::from(1)<<(logm-1)))>>(logm-1); // the current bit
+                let bit = K::new((n.clone()&(K::Integer::from(1)<<(logm-1)))>>(logm-1)); // the current bit
                 logm -= 1;
 
-                let  (mut a, mut b) = cond_swap(K::new(bit), x0, x1);
+                let  (mut a, mut b) = cond_swap(bit.clone(), x0, x1);
 
-                b = self.x_add(a, b, point);
+                b = self.x_add(a.clone(), b, point.clone());
                 a = self.x_dbl(a);
 
-                let (_a, _b) = cond_swap(K::new(bit), a, b);
+                let (_a, _b) = cond_swap(bit, a, b);
                 x0 = _a;
                 x1 = _b;
             }
