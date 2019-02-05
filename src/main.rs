@@ -7,21 +7,29 @@ pub mod field;
 mod csidh;
 
 use csidh::PublicKey;
+use elliptic_curves::EllipticCurve;
 
 fn main() {
     let mut pk = PublicKey::new(0);
 
     println!("Before class group action: {} - valid={}", pk, csidh::verify_public_key(pk));
 
-    let e = vec![3, -5, 1, 2, -8, 3];
+    //println!("{}", EllipticCurve::new_montgomery(pk).j_invariant());
 
-    pk = csidh::class_group_action(pk, e);
+    let e = vec![1, 1, 1, 0, 0, 0];
+    for _ in 1..10{
+        let a = csidh::class_group_action(pk, e.clone());
+        println!("{} - {}", a, EllipticCurve::new_montgomery(a).j_invariant());
+        print!("\n");
+    }
 
-    println!("After class group action: {} - valid={}", pk, csidh::verify_public_key(pk));
+    // println!("{}", EllipticCurve::new_montgomery(pk).j_invariant());
 
-    let e1 = vec![1, -10, 0, -3, 1, -1];
+    // println!("After class group action: {} - valid={}", pk, csidh::verify_public_key(pk));
 
-    pk = csidh::class_group_action(pk, e1);
+    // let e1 = vec![1, -10, 0, -3, 1, -1];
 
-    println!("After class group action: {} - valid={}", pk, csidh::verify_public_key(pk));
+    // pk = csidh::class_group_action(pk, e1);
+
+    // println!("After class group action: {} - valid={}", pk, csidh::verify_public_key(pk));
 }

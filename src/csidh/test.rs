@@ -33,3 +33,26 @@ fn class_group_action_keep_valid() {
     }
 
 }
+
+#[test]
+fn class_group_action_commute(){
+    for _i in 0..10{
+        let mut pk = sample_montgomery().a_2;
+    
+        let mut action1 = vec![0, 0, 0, 0, 0, 0];
+        let mut action2 = vec![0, 0, 0, 0, 0, 0];
+        for j in 0..6{
+            action1[j] = rand::random::<i8>()%3;
+            action2[j] = rand::random::<i8>()%3;
+        }
+
+
+        let pk1 = class_group_action(pk, action1.clone());
+        let pk12 = class_group_action(pk1, action2.clone());
+
+        let pk2 = class_group_action(pk, action2.clone());
+        let pk21 = class_group_action(pk2, action1.clone());
+
+        assert_eq!(pk12, pk21);
+    }
+}

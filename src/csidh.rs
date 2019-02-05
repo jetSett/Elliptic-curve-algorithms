@@ -49,6 +49,10 @@ fn is_supersingular(ell : &EllipticCurve<K>) -> bool{
 fn order_naive(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>) -> u32{
     assert!(ell.is_montgomery());
 
+    if p == &UnsignedProjPoint::infinite_point(){
+        return 1;
+    }
+
     let p_normalized = (*p).normalize();
 
 
@@ -78,8 +82,8 @@ fn velu_projection_montgomery(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>
     let p_normalized = (*p).normalize();
     q = q.normalize();
 
-    let mut projection_x = (q.x*p_normalized.x - K::from_int(1));
-    let mut projection_z = (q.x - p_normalized.x);
+    let mut projection_x = q.x*p_normalized.x - K::from_int(1);
+    let mut projection_z = q.x - p_normalized.x;
 
     // we start at i = 2 because of special doubling case
     let mut t = ell.x_dbl(p_normalized); // t = [i]p will iterate over elements of <p>
@@ -145,11 +149,10 @@ pub fn verify_public_key(pk : PublicKey) -> bool{
     is_supersingular(&EllipticCurve::new_montgomery(pk))
 }
 
-pub fn class_group_action(pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
+pub fn class_group_action(mut pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
     let mut rng = rand::thread_rng();
     let mut sum_abs : u32 = 0;
 
-    let mut a = pk;
 
     for i in 0..e.len(){
         sum_abs += (if e[i] >= 0 { e[i] } else {-e[i] }) as u32;
@@ -160,6 +163,10 @@ pub fn class_group_action(pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
     while sum_abs > 0{
         let x = K::new(rng.gen_range(0, P-1));
         let s = (x*x*x + pk*x*x + x).legendre_symbol();
+
+        if s == 0{
+            continue;
+        }
 
         let uns_p = UnsignedProjPoint::finite_point(x);
 
@@ -180,7 +187,7 @@ pub fn class_group_action(pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
         let mut q_point = ell.scalar_mult_unsigned((P+1)/k, uns_p);
 
         for j in 0..s_vec.len(){
-            let i = s_vec[j];
+            let i = s_vec[s_vec.len()-j-1];
 
             let r_point = ell.scalar_mult_unsigned(k/L[i], q_point);
 
@@ -197,15 +204,44 @@ pub fn class_group_action(pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
             };
 
             assert!(is_supersingular(&ell));
+            e[i] -= s;
 
             k /= L[i];
-            e[i] -= s;
+
             sum_abs -= 1;
 
-            a = ell.a_2;
+            pk = ell.a_2;
         }
     }
-    a
+    pk
+}
+
+pub fn naive_class_group_action(mut pk : PublicKey, sk : Vec<i8>) -> PublicKey{
+    let mut rng = rand::thread_rng();
+
+    let mut ell = EllipticCurve::new_montgomery(pk);
+
+    for i in 0..sk.len(){
+        if sk[i] == 0{
+            continue;
+        }
+        let s = if sk[i]>0{ 1 } else { -1 };
+
+        for _j in 0..(s*sk[i]){
+            let mut x = K::new(rng.gen_range(0, P-1));
+            let mut p_point = UnsignedProjPoint::finite_point(x);
+            let mut q_point = ell.scalar_mult_unsigned((P+1)/L[i], p_point);
+            while (x*x*x + pk*x*x + x).legendre_symbol() != s || q_point == UnsignedProjPoint::infinite_point() {
+                x = K::new(rng.gen_range(0, P-1));
+                p_point = UnsignedProjPoint::finite_point(x);
+                q_point = ell.scalar_mult_unsigned((P+1)/L[i], p_point);
+            }
+            ell = velu_formula_montgomery(&ell, &q_point).unwrap();
+            pk = ell.a_2;
+        }
+
+    }
+    pk
 }
 
 #[cfg(test)]
