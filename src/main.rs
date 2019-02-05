@@ -11,7 +11,7 @@ mod csidh;
 use csidh::*;
 
 fn main() {
-    let gen_param = 10;
+    let gen_param = 1;
 
     let mut current : u64;
 
@@ -19,6 +19,8 @@ fn main() {
         p: Integer::from(1021019),
         l: [Integer::from(3), Integer::from(5), Integer::from(7), Integer::from(11), Integer::from(13), Integer::from(17)]
     };
+
+    check_well_defined(&inst);
 
     current = time::precise_time_ns();
     let (pk_a, sk_a) = sample_keys(&inst, gen_param);

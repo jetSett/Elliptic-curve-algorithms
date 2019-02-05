@@ -172,13 +172,12 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
 
     while sum_abs > 0{
         let x = K::new(Integer::sample_uniform(&Integer::from(0), &(P-Integer::from(1))));
-
+        // println!("{}", sum_abs);
         let compute_rhs = | x | {
             &(&( &(x*x)*x )*x + &((&ell.a_2)*x)*x )+ x 
         };
 
-        let s = compute_rhs(&x).legendre_symbol();
-
+        let s = compute_rhs(&x).legendre_symbol() as i32;
         if s == 0{
             continue;
         }
@@ -189,7 +188,7 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
         let mut k = Integer::from(1);
 
         for i in 0..sk.len(){
-            if sk[i]* (s as i32) > 0{
+            if sk[i]* s > 0{
                 s_vec.push(i);
                 k *= L[i].clone();
             }
@@ -235,6 +234,7 @@ pub fn sample_keys(inst : &CSIDHInstance, m : i32) -> (PublicKey, SecretKey){
     for i in 0..N_PRIMES{
         sk[i] = rng.gen_range(-m, m) as i32;
     }
+
     let pk = class_group_action(inst, PublicKey::from_int(0), sk);
     (pk, sk)
 }

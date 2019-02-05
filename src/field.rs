@@ -69,6 +69,7 @@ pub trait IntegerTrait : Sized +
 impl IntegerTrait for Mpz{
   fn sample_uniform(min : &Mpz, max : &Mpz) -> Mpz{
     let mut rng = gmp::rand::RandState::new();
+    rng.seed(Mpz::from(rand::random::<i64>())); // pas beau du tout
     rng.urandom(&(max-min)) + min
   }
 }

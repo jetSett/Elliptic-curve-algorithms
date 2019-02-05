@@ -118,8 +118,8 @@ impl<K> EllipticCurve<K>
             let u = (p.x.clone()-p.z.clone())*(q.x.clone()+q.z.clone());
             let v = (p.x+p.z)*(q.x-q.z);
 
-            let x = (u.clone()+v.clone());
-            let z = (u-v);
+            let x = u.clone()+v.clone();
+            let z = u-v;
 
             UnsignedProjPoint{
                 x: p_minus_q.z*x.clone()*x,
@@ -129,10 +129,10 @@ impl<K> EllipticCurve<K>
 
         pub fn x_dbl(&self, p : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
             let a = self.a_2.clone();
-            let mut q = (p.x.clone() + p.z.clone());
+            let mut q = p.x.clone() + p.z.clone();
             q = q.clone()*q;
 
-            let mut r = (p.x - p.z);
+            let mut r = p.x - p.z;
             r = r.clone()*r;
 
             let s = q.clone() - r.clone();
