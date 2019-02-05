@@ -73,15 +73,15 @@ impl<K> EllipticCurve<K>
             if !self.is_reduced_weierstrass(){
                 panic!("VELU formula must be used only with curves in reduced form");
             }
-            let mut g = *p;
-            let a = self.a_4;
-            let b = self.a_6;
+            let mut g = p.clone();
+            let a = self.a_4.clone();
+            let b = self.a_6.clone();
             let mut sum_a = K::from_int(0);
             let mut sum_b = K::from_int(0);
-            while let ProjKPoint::FinPoint(x_g, _) = g {
-                sum_a += K::from_int(3)*x_g*x_g + a;
-                sum_b += K::from_int(5)*x_g*x_g*x_g + K::from_int(3)*a*x_g + K::from_int(2)*b;
-                g = self.add_points(g, *p);
+            while let ProjKPoint::FinPoint(x_g, _) = &g {
+                sum_a += K::from_int(3)*x_g.clone()*x_g.clone() + a.clone();
+                sum_b += K::from_int(5)*x_g.clone()*x_g.clone()*x_g.clone() + K::from_int(3)*a.clone()*x_g.clone() + K::from_int(2)*b.clone();
+                g = self.add_points(g, p.clone());
             }
             EllipticCurve::new_reduced_weierstrass(a - K::from_int(5)*sum_a, b - K::from_int(7)*sum_b)
         }
@@ -93,27 +93,27 @@ impl<K> EllipticCurve<K>
             }
 
             use ProjKPoint::*;
-            match q{
+            match q.clone(){
                 InfPoint => InfPoint,
                 FinPoint(xq, yq) => {
                     let mut x = xq;
                     let mut y = yq;
-                    let mut group_point = *p;
-                    let mut q_plus_ip = self.add_points(*p, q);
+                    let mut group_point = p.clone();
+                    let mut q_plus_ip = self.add_points(p.clone(), q.clone());
 
-                    while let FinPoint(x_ip, y_ip) = group_point {
+                    while let FinPoint(x_ip, y_ip) = group_point.clone() {
 
                         if &group_point == &q{ // If Q == iP then Q is in the subgroup
                             return InfPoint;
                         }
-                        if let FinPoint(x_q_plus_ip, y_q_plus_ip) = q_plus_ip{
+                        if let FinPoint(x_q_plus_ip, y_q_plus_ip) = q_plus_ip.clone(){
                             x += x_q_plus_ip - x_ip;
                             y += y_q_plus_ip - y_ip;
                         }else{ // If Q + iP == 0 then Q is in the subgroup
                             return InfPoint;
                         }
-                        group_point = self.add_points(group_point, *p);
-                        q_plus_ip = self.add_points(q_plus_ip, *p);
+                        group_point = self.add_points(group_point, p.clone());
+                        q_plus_ip = self.add_points(q_plus_ip, p.clone());
                     }
                     FinPoint(x, y)
                 }
@@ -121,23 +121,23 @@ impl<K> EllipticCurve<K>
         }
 
         fn b2(&self) -> K{
-            self.a_1*self.a_1 + K::from_int(4)*self.a_2
+            self.a_1.clone()*self.a_1.clone() + K::from_int(4)*self.a_2.clone()
             // self.a_1*self.a_1 + K::from_int(4)*self.a_4 // Version from Silvermann
         }
 
         fn b4(&self) -> K{
-            K::from_int(2)*self.a_4 + self.a_1*self.a_3
+            K::from_int(2)*self.a_4.clone() + self.a_1.clone()*self.a_3.clone()
         }
 
         fn b6(&self) -> K{
-            self.a_3*self.a_3 + K::from_int(4)*self.a_6
+            self.a_3.clone()*self.a_3.clone() + K::from_int(4)*self.a_6.clone()
         }
 
         fn c4(&self) -> K{
             let b2 = self.b2();
             let b4 = self.b4();
 
-            b2*b2 - K::from_int(24)*b4
+            b2.clone()*b2 - K::from_int(24)*b4
         }
 
         fn c6(&self) -> K{
@@ -145,12 +145,12 @@ impl<K> EllipticCurve<K>
             let b4 = self.b4();
             let b6 = self.b6();
 
-            -b2*b2*b2 + K::from_int(36)*b2*b4 - K::from_int(216)*b6
+            -b2.clone()*b2.clone()*b2.clone() + K::from_int(36)*b2*b4 - K::from_int(216)*b6
         }
 
         pub fn j_invariant(&self) -> K{
             let c4 = self.c4();
-            c4*c4*c4/self.discriminant()
+            c4.clone()*c4.clone()*c4/self.discriminant()
         }
 
         pub fn discriminant(&self) -> K{
@@ -158,17 +158,19 @@ impl<K> EllipticCurve<K>
             let b4 = self.b4();
             let b6 = self.b6();
 
-            K::from_int(-4)*(b2*b2*b2*b6 - b2*b2*b4*b4 - K::from_int(36)*b2*b4*b6 + K::from_int(32)*b4*b4*b4 + K::from_int(108)*b6*b6)
+            K::from_int(-4)*(b2.clone()*b2.clone()*b2.clone()*b6.clone() - b2.clone()*b2.clone()*b4.clone()*b4.clone() - 
+            K::from_int(36)*b2*b4.clone()*b6.clone() + K::from_int(32)*b4.clone()*b4.clone()*b4 + K::from_int(108)*b6.clone()*b6)
             //-b2*b2*b8 - K::from_int(8)*b4*b4*b4 - K::from_int(27)*b6*b6 + K::from_int(9)*b2*b4*b6
         }
 
         pub fn is_on_curve(&self, point : &ProjKPoint<K>) -> bool{
             use ProjKPoint::*;
             // y^2 + a_1 xy + a_3 y = x^3 + a_2 x^2 + a_4 x + a_6
-            match *point{
+            match point{
                 InfPoint => true,
                 FinPoint(x, y) =>{
-                    y*y + self.a_1*x*y + self.a_3 * y == x*x*x + self.a_2*x*x + self.a_4*x + self.a_6
+                    y.clone()*y.clone() + self.a_1.clone()*x.clone()*y.clone() + self.a_3.clone() * y.clone() == 
+                    x.clone()*x.clone()*x.clone() + self.a_2.clone()*x.clone()*x.clone() + self.a_4.clone()*x.clone() + self.a_6.clone()
                 }
             }
         }
@@ -178,7 +180,7 @@ impl<K> EllipticCurve<K>
             use ProjKPoint::*;
             match point {
                 InfPoint => InfPoint,
-                FinPoint(x, y) => FinPoint(x, -y - self.a_1*x - self.a_3),
+                FinPoint(x, y) => FinPoint(x.clone(), -y - self.a_1.clone()*x - self.a_3.clone()),
             }
         }
 
@@ -188,28 +190,31 @@ impl<K> EllipticCurve<K>
 
             use ProjKPoint::*;
 
-            let a_1 = self.a_1;
-            let a_2 = self.a_2;
-            let a_3 = self.a_3;
-            let a_4 = self.a_4;
-            let a_6 = self.a_6;
+            let a_1 = self.a_1.clone();
+            let a_2 = self.a_2.clone();
+            let a_3 = self.a_3.clone();
+            let a_4 = self.a_4.clone();
+            let a_6 = self.a_6.clone();
 
-            if point1 == self.neg_point(point2){
+            if point1 == self.neg_point(point2.clone()){
                 return InfPoint;
             }
-            match (point1, point2){
+            match (point1.clone(), point2.clone()){
                 (InfPoint, _) => point2,
                 (_, InfPoint) => point1,
                 (FinPoint(x1, y1), FinPoint(x2, y2)) => {
                     let (lambda, nu) = 
                         if x1 != x2 {
-                            ((y2-y1)/(x2-x1), (y1*x2 - y2*x1)/(x2-x1))
+                            ((y2.clone()-y1.clone())/(x2.clone()-x1.clone()), (y1*x2.clone() - y2*x1.clone())/(x2.clone()-x1.clone()))
                         }else{
-                            ((K::from_int(3)*x1*x1 + K::from_int(2)*a_2*x1 + a_4 - a_1*y1)/(K::from_int(2)*y1 + a_1*x1 + a_3), 
-                             (-x1*x1*x1 + a_4*x1 + K::from_int(2)*a_6 - a_3*y1)/(K::from_int(2)*y1 + a_1*x1 + a_3))
+                            ((K::from_int(3)*x1.clone()*x1.clone() + K::from_int(2)*a_2.clone()*x1.clone() + a_4.clone() - a_1.clone()*y1.clone())/
+                             (K::from_int(2)*y1.clone() + a_1.clone()*x1.clone() + a_3.clone()), 
+
+                             (-x1.clone()*x1.clone()*x1.clone() + a_4*x1.clone() + K::from_int(2)*a_6 - a_3.clone()*y1.clone())/
+                             (K::from_int(2)*y1 + a_1.clone()*x1.clone() + a_3.clone()))
                         };
-                    let x3 = lambda*lambda +a_1*lambda - a_2 - x1 - x2;
-                    let y3 = -(lambda + a_1)*x3 - nu - a_3;
+                    let x3 = lambda.clone()*lambda.clone() +a_1.clone()*lambda.clone() - a_2 - x1 - x2;
+                    let y3 = -(lambda + a_1)*x3.clone() - nu - a_3;
                     FinPoint(x3, y3)
                 }
             }
@@ -228,10 +233,10 @@ impl<K> EllipticCurve<K>
 
             use ProjKPoint::*;
             let mut p1 = point;
-            let mut p2 = self.add_points(p1, p1);
+            let mut p2 = self.add_points(p1.clone(), p1.clone());
 
             let mut logm = 0;
-            let mut m = n;
+            let mut m = n.clone();
             while m != K::Integer::from(0){
                 m >>= 1;
                 logm += 1;
@@ -239,14 +244,14 @@ impl<K> EllipticCurve<K>
             logm -= 1; // -1 is here in order to ignore the first bit (included in p2 already)
 
             while logm >= 1{
-                let bit = (n&(K::Integer::from(1)<<(logm-1)))>>(logm-1); // the current bit
+                let bit = (n.clone()&(K::Integer::from(1)<<(logm-1)))>>(logm-1); // the current bit
                 logm -= 1;
                 if bit == K::Integer::from(0){
-                    p2 = self.add_points(p1, p2);
-                    p1 = self.add_points(p1, p1);
+                    p2 = self.add_points(p1.clone(), p2);
+                    p1 = self.add_points(p1.clone(), p1);
                 }else{
-                    p1 = self.add_points(p1, p2);
-                    p2 = self.add_points(p2, p2);
+                    p1 = self.add_points(p1, p2.clone());
+                    p2 = self.add_points(p2.clone(), p2);
                 }
             }
             p1
