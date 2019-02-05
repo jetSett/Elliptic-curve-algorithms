@@ -15,24 +15,29 @@ fn main() {
 
     let mut current : u64;
 
+    let inst = CSIDHInstance{ 
+        p: Integer::from(1021019),
+        l: [Integer::from(3), Integer::from(5), Integer::from(7), Integer::from(11), Integer::from(13), Integer::from(17)]
+    };
+
     current = time::precise_time_ns();
-    let (pk_a, sk_a) = sample_keys(gen_param);
+    let (pk_a, sk_a) = sample_keys(&inst, gen_param);
     let time_gen_a = (time::precise_time_ns()-current)/1000000;
     println!("Alice's public key: {} ({} ms)", pk_a, time_gen_a);
 
     current = time::precise_time_ns();
-    let (pk_b, sk_b) = sample_keys(gen_param);
+    let (pk_b, sk_b) = sample_keys(&inst, gen_param);
     let time_gen_b = (time::precise_time_ns()-current)/1000000;
     println!("Bob's public key: {} ({} ms)", pk_b, time_gen_b);
 
     current = time::precise_time_ns();
-    let shared_a = class_group_action(pk_b, sk_a);
+    let shared_a = class_group_action(&inst, pk_b, sk_a);
     let time_shared_a = (time::precise_time_ns()-current)/1000000;
     println!("Alice's shared secret: {} ({} ms)", shared_a, time_shared_a);
 
 
     current = time::precise_time_ns();
-    let shared_b = class_group_action(pk_a, sk_b);
+    let shared_b = class_group_action(&inst, pk_a, sk_b);
     let time_shared_b = (time::precise_time_ns()-current)/1000000;
     println!("Bob's shared secret: {} ({} ms)", shared_b, time_shared_b);
 

@@ -23,7 +23,10 @@ pub trait Field : Sized +
                   DivAssign +
                   SubAssign +
                   PartialEq +
-                  Display
+                  Display +
+
+                  Clone +
+
                   {
                     type Integer : IntegerTrait;
                     fn from_int(n : i32) -> Self;

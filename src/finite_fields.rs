@@ -136,6 +136,14 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Sub for Fp<N, Integer>{
         }
 }
 
+impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Sub for &Fp<N, Integer>{
+        type Output = Fp<N, Integer>;
+
+        fn sub(self, other: &Fp<N, Integer>) -> Fp<N, Integer>{
+            Fp::new((self.repr.clone() - other.repr.clone() + N::value()) % N::value())
+        }
+}
+
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Mul for Fp<N, Integer>{
         type Output = Fp<N, Integer>;
 
