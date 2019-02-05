@@ -2,7 +2,7 @@ use std::fmt;
 
 use std::fmt::Display;
 
-use crate::field::{Field, Integer};
+use crate::field::{Field};
 
 pub mod fp_elliptic_curves;
 
@@ -215,13 +215,14 @@ impl<K> EllipticCurve<K>
             }
         }
 
-        pub fn scalar_mult(&self, n : Integer, point : ProjKPoint<K>) -> ProjKPoint<K>{
+        pub fn scalar_mult(&self, n : K::Integer, point : ProjKPoint<K>) -> ProjKPoint<K>{
+
             assert!(self.is_on_curve(&point));
-            if n == 0{
+            if n == K::Integer::from(0){
                 return InfPoint;
             }
 
-            if n < 0{
+            if n < K::Integer::from(0){
                 return self.scalar_mult(-n, self.neg_point(point));
             }
 
@@ -229,17 +230,18 @@ impl<K> EllipticCurve<K>
             let mut p1 = point;
             let mut p2 = self.add_points(p1, p1);
 
-            let mut logm = -1; // -1 is here in order to ignore the first bit (included in p2 already)
+            let mut logm = 0;
             let mut m = n;
-            while m != 0{
+            while m != K::Integer::from(0){
                 m >>= 1;
                 logm += 1;
             }
+            logm -= 1; // -1 is here in order to ignore the first bit (included in p2 already)
 
             while logm >= 1{
-                let bit = (n&(1<<(logm-1)))>>(logm-1); // the current bit
+                let bit = (n&(K::Integer::from(1)<<(logm-1)))>>(logm-1); // the current bit
                 logm -= 1;
-                if bit == 0{
+                if bit == K::Integer::from(0){
                     p2 = self.add_points(p1, p2);
                     p1 = self.add_points(p1, p1);
                 }else{

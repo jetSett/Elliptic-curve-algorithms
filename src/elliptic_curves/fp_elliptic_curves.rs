@@ -1,8 +1,8 @@
-use rand::Rng;
-
 use crate::finite_fields::*;
 
 use super::*;
+
+use crate::field::IntegerTrait;
 
 #[derive(Clone, Copy, Debug)]
 pub struct UnsignedProjPoint<K : FiniteField>{
@@ -91,15 +91,14 @@ impl<K> EllipticCurve<K>
             if !self.left_side_empty(){
                 panic!("sample_point point must be used with curves with only y^2");
             }
-
-            let mut rng = rand::thread_rng();
-            let mut x = K::from_int(rng.gen_range(0, K::cardinal()-1));
+            let sample_element = | |{ K::new(K::Integer::sample_uniform(&K::Integer::from(0), &(K::cardinal()-K::Integer::from(1)))) };
+            let mut x = sample_element();
 
             let f = |x| {
                 x*x*x + self.a_2*x*x + self.a_4*x + self.a_6
             };
             while f(x).legendre_symbol() != 1{
-                x = K::from_int(rng.gen_range(0, K::cardinal()-1));
+                x = sample_element();
             }
             ProjKPoint::FinPoint(x, f(x).square_root())
         }
@@ -136,19 +135,19 @@ impl<K> EllipticCurve<K>
             }
         }
 
-        pub fn scalar_mult_unsigned(&self, n : Integer, point : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
+        pub fn scalar_mult_unsigned(&self, n : K::Integer, point : UnsignedProjPoint<K>) -> UnsignedProjPoint<K>{
 
-            if n == 0{
+            if n == K::Integer::from(0){
                 return UnsignedProjPoint::infinite_point();
             }
 
-            if n < 0{
+            if n < K::Integer::from(0){
                 return self.scalar_mult_unsigned(-n, point);
             }
             
             let mut logm = 0;
             let mut m = n;
-            while m != 0{
+            while m != K::Integer::from(0){
                 m >>= 1;
                 logm += 1;
             }
@@ -168,15 +167,15 @@ impl<K> EllipticCurve<K>
             };
 
             while logm >= 1{
-                let bit = (n&(1<<(logm-1)))>>(logm-1); // the current bit
+                let bit = (n&(K::Integer::from(1)<<(logm-1)))>>(logm-1); // the current bit
                 logm -= 1;
 
-                let  (mut a, mut b) = cond_swap(K::from_int(bit), x0, x1);
+                let  (mut a, mut b) = cond_swap(K::new(bit), x0, x1);
 
                 b = self.x_add(a, b, point);
                 a = self.x_dbl(a);
 
-                let (_a, _b) = cond_swap(K::from_int(bit), a, b);
+                let (_a, _b) = cond_swap(K::new(bit), a, b);
                 x0 = _a;
                 x1 = _b;
             }

@@ -7,29 +7,31 @@ use crate::elliptic_curves::fp_elliptic_curves::*;
 
 const N_PRIMES : usize = 6;
 
-const L : [Integer; N_PRIMES] = [3, 5, 7, 11, 13, 17];
+type Integer = gmp::mpz::Mpz;
 
-const P : Integer = 1021019; // NB : P = 4*L_0*...*L_{N_PRIMES-1} -1
+const L : [Integer; N_PRIMES] = [Integer::from(3), Integer::from(5), Integer::from(7), Integer::from(11), Integer::from(13), Integer::from(17)];
 
-declare_finite_field!(K, P, _m);
+const P : Integer = Integer::from(1021019); // NB : P = 4*L_0*...*L_{N_PRIMES-1} -1
+
+declare_finite_field!(K, Integer, P, _m);
 
 pub type PublicKey = K;
 
-pub type SecretKey =  [i8; N_PRIMES];
+pub type SecretKey =  [i32; N_PRIMES];
 
 pub fn check_well_defined(){
-    let mut prod = 1;
+    let mut prod = Integer::from(1);
     for i in 0..N_PRIMES{
         prod *= L[i];
     }
-    assert_eq!(P, 4*prod-1);
+    assert_eq!(P, Integer::from(4)*prod-Integer::from(1));
 }
 
 fn is_supersingular(ell : &EllipticCurve<K>) -> bool{
     loop{
         let p = EllipticCurve::unsigne_point(ell.sample_point()); // We test multiple point if necessary
 
-        let mut d : Integer = 1;
+        let mut d : Integer = Integer::from(1);
 
         for i in 0..N_PRIMES{
             let li = L[i];
@@ -41,24 +43,24 @@ fn is_supersingular(ell : &EllipticCurve<K>) -> bool{
             if qi != UnsignedProjPoint::infinite_point(){
                 d *= li;
             }
-            if d*d > 16*P{
+            if d*d > Integer::from(16)*P{
                 return true;
             }
         }
     }
 }
 
-fn order_naive(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>) -> u32{
+fn order_naive(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>) -> Integer{
     assert!(ell.is_montgomery());
 
     if p == &UnsignedProjPoint::infinite_point(){
-        return 1;
+        return Integer::from(1);
     }
 
     let p_normalized = (*p).normalize();
 
 
-    let mut order : u32 = 2;
+    let mut order = Integer::from(2);
 
     // we start at i = 2 because of special doubling case
     let mut t = ell.x_dbl(p_normalized); // t = [i]p will iterate over elements of <p>
@@ -67,7 +69,7 @@ fn order_naive(ell : &EllipticCurve<K>, p : &UnsignedProjPoint<K>) -> u32{
     let mut t_minus_1 = p_normalized;
 
     while t != UnsignedProjPoint::infinite_point(){
-        order += 1;
+        order += Integer::from(1);
 
         let _temp = t;
         t = ell.x_add(t, *p, t_minus_1);
@@ -122,10 +124,10 @@ fn velu_formula_montgomery(ell : &EllipticCurve<K>, point : &UnsignedProjPoint<K
     // we start at i = 2 because of special doubling case
     let mut t = ell.x_dbl(p_normalized); // t = [i]p will iterate over elements of <p>
 
-    let mut t_minus_1 = p_normalized;
+    let mut t_minus_1 = p_normalized.clone();
 
-    let mut pi = p_normalized.x;
-    let mut sigma = p_normalized.x - K::from_int(1)/p_normalized.x;
+    let mut pi = p_normalized.x.clone();
+    let mut sigma = p_normalized.x.clone() - K::from_int(1)/p_normalized.x.clone();
 
     while t != UnsignedProjPoint::infinite_point(){
         if t.x == K::from_int(0){
@@ -151,8 +153,7 @@ pub fn verify_public_key(pk : PublicKey) -> bool{
     is_supersingular(&EllipticCurve::new_montgomery(pk))
 }
 
-pub fn class_group_action(mut pk : PublicKey, mut sk : SecretKey) -> PublicKey{
-    let mut rng = rand::thread_rng();
+pub fn class_group_action(pk : PublicKey, mut sk : SecretKey) -> PublicKey{
     let mut sum_abs : u32 = 0;
 
 
@@ -163,8 +164,13 @@ pub fn class_group_action(mut pk : PublicKey, mut sk : SecretKey) -> PublicKey{
     let mut ell = EllipticCurve::new_montgomery(pk);
 
     while sum_abs > 0{
-        let x = K::new(rng.gen_range(0, P-1));
-        let s = (x*x*x + pk*x*x + x).legendre_symbol();
+        let x = K::new(Integer::sample_uniform(&Integer::from(0), &(P-Integer::from(1))));
+
+        let compute_rhs = | x | {
+            &(&( &(x*x)*x )*x + &((&ell.a_2)*x)*x )+ x 
+        };
+
+        let s = compute_rhs(&x).legendre_symbol();
 
         if s == 0{
             continue;
@@ -173,12 +179,12 @@ pub fn class_group_action(mut pk : PublicKey, mut sk : SecretKey) -> PublicKey{
         let uns_p = UnsignedProjPoint::finite_point(x);
 
         let mut s_vec = vec!();
-        let mut k = 1;
+        let mut k = Integer::from(1);
 
         for i in 0..sk.len(){
-            if sk[i]* s > 0{
+            if sk[i]* (s as i32) > 0{
                 s_vec.push(i);
-                k *= L[i];
+                k *= L[i].clone();
             }
         }
 
@@ -186,14 +192,14 @@ pub fn class_group_action(mut pk : PublicKey, mut sk : SecretKey) -> PublicKey{
             continue;
         }
 
-        let mut q_point = ell.scalar_mult_unsigned((P+1)/k, uns_p);
+        let mut q_point = ell.scalar_mult_unsigned((P.clone()+Integer::from(1))/k.clone(), uns_p);
 
         for j in 0..s_vec.len(){
             let i = s_vec[s_vec.len()-j-1];
 
-            let r_point = ell.scalar_mult_unsigned(k/L[i], q_point);
+            let r_point = ell.scalar_mult_unsigned(k.clone()/L[i].clone(), q_point.clone());
 
-            if r_point == UnsignedProjPoint::infinite_point(){
+            if &r_point == &UnsignedProjPoint::infinite_point(){
                 continue;
             }
 
@@ -206,25 +212,23 @@ pub fn class_group_action(mut pk : PublicKey, mut sk : SecretKey) -> PublicKey{
             };
 
             assert!(is_supersingular(&ell));
-            sk[i] -= s;
+            sk[i] -= s as i32;
 
-            k /= L[i];
+            k /= L[i].clone();
 
             sum_abs -= 1;
-
-            pk = ell.a_2;
         }
     }
-    pk
+    ell.a_2
 }
 
-pub fn sample_keys(m : u8) -> (PublicKey, SecretKey){
+pub fn sample_keys(m : i32) -> (PublicKey, SecretKey){
     let mut rng = rand::thread_rng();
     let mut sk : SecretKey = [0, 0, 0, 0, 0, 0];
     for i in 0..N_PRIMES{
-        sk[i] = rng.gen_range(-(m as i16), m as i16) as i8;
+        sk[i] = rng.gen_range(-m, m) as i32;
     }
-    let pk = class_group_action(PublicKey::new(0), sk);
+    let pk = class_group_action(PublicKey::from_int(0), sk);
     (pk, sk)
 }
 

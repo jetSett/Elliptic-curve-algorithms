@@ -9,7 +9,6 @@ pub mod field;
 mod csidh;
 
 use csidh::*;
-use elliptic_curves::EllipticCurve;
 
 fn main() {
     let gen_param = 10;
@@ -37,4 +36,6 @@ fn main() {
     let time_shared_b = (time::precise_time_ns()-current)/1000000;
     println!("Bob's shared secret: {} ({} ms)", shared_b, time_shared_b);
 
+    assert_eq!(shared_a, shared_a);
+    println!("Shared secret match!");
 }
