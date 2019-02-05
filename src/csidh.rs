@@ -15,6 +15,8 @@ declare_finite_field!(K, P, _m);
 
 pub type PublicKey = K;
 
+pub type SecretKey =  [i8; N_PRIMES];
+
 pub fn check_well_defined(){
     let mut prod = 1;
     for i in 0..N_PRIMES{
@@ -149,13 +151,13 @@ pub fn verify_public_key(pk : PublicKey) -> bool{
     is_supersingular(&EllipticCurve::new_montgomery(pk))
 }
 
-pub fn class_group_action(mut pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
+pub fn class_group_action(mut pk : PublicKey, mut sk : SecretKey) -> PublicKey{
     let mut rng = rand::thread_rng();
     let mut sum_abs : u32 = 0;
 
 
-    for i in 0..e.len(){
-        sum_abs += (if e[i] >= 0 { e[i] } else {-e[i] }) as u32;
+    for i in 0..sk.len(){
+        sum_abs += (if sk[i] >= 0 { sk[i] } else {-sk[i] }) as u32;
     }
 
     let mut ell = EllipticCurve::new_montgomery(pk);
@@ -173,8 +175,8 @@ pub fn class_group_action(mut pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
         let mut s_vec = vec!();
         let mut k = 1;
 
-        for i in 0..e.len(){
-            if e[i]* s > 0{
+        for i in 0..sk.len(){
+            if sk[i]* s > 0{
                 s_vec.push(i);
                 k *= L[i];
             }
@@ -204,7 +206,7 @@ pub fn class_group_action(mut pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
             };
 
             assert!(is_supersingular(&ell));
-            e[i] -= s;
+            sk[i] -= s;
 
             k /= L[i];
 
@@ -216,32 +218,14 @@ pub fn class_group_action(mut pk : PublicKey, mut e : Vec<i8>) -> PublicKey{
     pk
 }
 
-pub fn naive_class_group_action(mut pk : PublicKey, sk : Vec<i8>) -> PublicKey{
+pub fn sample_keys(m : u8) -> (PublicKey, SecretKey){
     let mut rng = rand::thread_rng();
-
-    let mut ell = EllipticCurve::new_montgomery(pk);
-
-    for i in 0..sk.len(){
-        if sk[i] == 0{
-            continue;
-        }
-        let s = if sk[i]>0{ 1 } else { -1 };
-
-        for _j in 0..(s*sk[i]){
-            let mut x = K::new(rng.gen_range(0, P-1));
-            let mut p_point = UnsignedProjPoint::finite_point(x);
-            let mut q_point = ell.scalar_mult_unsigned((P+1)/L[i], p_point);
-            while (x*x*x + pk*x*x + x).legendre_symbol() != s || q_point == UnsignedProjPoint::infinite_point() {
-                x = K::new(rng.gen_range(0, P-1));
-                p_point = UnsignedProjPoint::finite_point(x);
-                q_point = ell.scalar_mult_unsigned((P+1)/L[i], p_point);
-            }
-            ell = velu_formula_montgomery(&ell, &q_point).unwrap();
-            pk = ell.a_2;
-        }
-
+    let mut sk : SecretKey = [0, 0, 0, 0, 0, 0];
+    for i in 0..N_PRIMES{
+        sk[i] = rng.gen_range(-(m as i16), m as i16) as i8;
     }
-    pk
+    let pk = class_group_action(PublicKey::new(0), sk);
+    (pk, sk)
 }
 
 #[cfg(test)]
