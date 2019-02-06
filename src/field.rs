@@ -66,10 +66,15 @@ pub trait IntegerTrait : Sized +
                   }
 
 
+
 impl IntegerTrait for Mpz{
   fn sample_uniform(min : &Mpz, max : &Mpz) -> Mpz{
-    let mut rng = gmp::rand::RandState::new();
-    rng.seed(Mpz::from(rand::random::<i64>())); // pas beau du tout
-    rng.urandom(&(max-min)) + min
+    let mut u : [u8; 64] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    for i in 0..64{
+      u[i] = rand::random::<u8>();
+    }
+    let v : &[u8] = &u;
+    let z = Mpz::from(v);
+    z%(&(max-min)) + min
   }
 }

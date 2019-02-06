@@ -15,7 +15,9 @@ pub struct CSIDHInstance{
     pub p: Integer,
 }
 
-declare_finite_field!(K, Integer, Integer::from_str_radix("37118532150319619", 10).unwrap(), _m);
+declare_finite_field!(K, Integer, 
+            Integer::from_str_radix("5326738796327623094747867617954605554069371494832722337612446642054009560026576537626892113026381253624626941643949444792662881241621373288942880288065659", 10).unwrap(), 
+            _m);
 
 pub type PublicKey = K;
 
@@ -254,19 +256,20 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
         let mut q_point = ell.scalar_mult_unsigned((P.clone()+Integer::from(1))/k.clone(), uns_p);
 
         for j in 0..s_sign[sign_index].len(){
-            let i = s_sign[sign_index].len()-1-j;
+            // let i = s_sign[sign_index].len()-1-j;
+            let i = j;
             if finished_sign[sign_index][i]{
                 continue;
             }
             finished_total[sign_index] = false;
 
             let li : Integer = s_sign[sign_index][i].clone();
-            println!("{} - {}", li, e_sign[sign_index][i]);
+            // println!("{} - {}", li, e_sign[sign_index][i]);
 
             let r_point = ell.scalar_mult_unsigned(k.clone()/(li.clone()), q_point.clone());
 
             if &r_point == &UnsignedProjPoint::infinite_point(){
-                println!("Too low index");
+                // println!("Too low index");
                 continue;
             }
 
@@ -277,6 +280,8 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
                     },
                 Ok(pair) => pair
             };
+
+            // println!("Point of the correct order found: {}", li);
 
             ell = ell_;
             q_point = q_point_;
