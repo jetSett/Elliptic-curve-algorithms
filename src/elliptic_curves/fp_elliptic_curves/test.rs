@@ -1,13 +1,15 @@
 use super::*;
 
-const P : Integer = 10169;
+type Integer = gmp::mpz::Mpz;
 
-declare_finite_field!(K, P, m10169);
+const P : u32 = 10169;
+
+declare_finite_field!(K, Integer, Integer::from(P), m10169);
 
 fn sample_montgomery() -> EllipticCurve<K>{
-    let mut ell = EllipticCurve::new_montgomery(K::new(rand::random::<Integer>()%P));
-    while ell.discriminant() == K::new(0){
-        ell = EllipticCurve::new_montgomery(K::new(rand::random::<Integer>()%P));
+    let mut ell = EllipticCurve::new_montgomery(K::new(Integer::sample_uniform(&Integer::from(0), &Integer::from(P))));
+    while ell.discriminant() == K::from_int(0){
+        ell = EllipticCurve::new_montgomery(K::new(Integer::sample_uniform(&Integer::from(0), &Integer::from(P))));
     }
     ell
 }
@@ -18,7 +20,7 @@ fn x_double_coincide(){
         let ell = sample_montgomery();
         for _i in 1..50{
             let p = ell.sample_point();
-            let p2 = ell.add_points(p, p);
+            let p2 = ell.add_points(p.clone(), p.clone());
             let p_int = EllipticCurve::unsigne_point(p);
 
             assert_eq!(ell.x_dbl(p_int), 
@@ -34,8 +36,8 @@ fn x_add_coincide(){
         for _i in 1..50{
             let p1 = ell.sample_point();
             let p2 = ell.sample_point();
-            let p_plus = ell.add_points(p1, p2);
-            let p_moins = ell.add_points(p1, ell.neg_point(p2));
+            let p_plus = ell.add_points(p1.clone(), p2.clone());
+            let p_moins = ell.add_points(p1.clone(), ell.neg_point(p2.clone()));
 
             let p1_uns = EllipticCurve::unsigne_point(p1); 
             let p2_uns = EllipticCurve::unsigne_point(p2); 
@@ -56,10 +58,10 @@ fn scalar_multiplication_coincide_scalar(){
     for _j in 1..10{
         let ell = sample_montgomery();
         for _i in 1..50{
-            let n = rand::random::<Integer>()%1000;
+            let n = Integer::sample_uniform(&Integer::from(0), &Integer::from(1000));
             let p = ell.sample_point();
 
-            let np = ell.scalar_mult(n, p);
+            let np = ell.scalar_mult(n.clone(), p.clone());
 
             let unsign_p = EllipticCurve::unsigne_point(p);
 
