@@ -188,6 +188,7 @@ pub fn naive_class_group_action(inst : &CSIDHInstance, pk : PublicKey, sk : Secr
                 p_point = UnsignedProjPoint::finite_point(x.clone());
                 q_point = ell.scalar_mult_unsigned(p_plus_1.clone()/L[i].clone(), p_point);
             }
+            // println!("{} ({})", x, L[i]);
             // println!("{} - {}", order_naive(&ell, &q_point), L[i]);
             let (ell_, _) = isogeny(&ell, &q_point, q_point.clone(), L[i].clone()).unwrap();
             ell = ell_;
@@ -201,17 +202,33 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
     let L = &inst.l;
     let P = &inst.p;
     let N_PRIMES = &inst.n_primes;
+    let mut finished_total : [bool; 2] = [false, false];
 
-    let mut sum_abs : u32 = 0;
-
+    let mut k_sign : [Integer; 2]= [Integer::from(1), Integer::from(1)]; // 1 -> >= 0;  10-> <= 0
+    let mut s_sign : [Vec<Integer>; 2] = [vec!(), vec!()];
+    let mut e_sign : [Vec<i32>; 2] = [vec!(), vec!()];
+    let mut finished_sign : [Vec<bool>; 2] = [vec!(), vec!()];
 
     for i in 0..sk.len(){
-        sum_abs += (if sk[i] >= 0 { sk[i] } else {-sk[i] }) as u32;
+        if sk[i] == 0{
+        }else if sk[i] > 0{
+            e_sign[1].push(sk[i]);
+            s_sign[1].push(L[i].clone());
+            finished_sign[1].push(false);
+
+            k_sign[1] *= L[i].clone();
+        }else{
+            e_sign[0].push(sk[i]);
+            s_sign[0].push(L[i].clone());
+            finished_sign[0].push(false);
+
+            k_sign[0] *= L[i].clone();
+        }
     }
 
     let mut ell = EllipticCurve::new_montgomery(pk);
 
-    while sum_abs > 0{
+    while !finished_total[0] || !finished_total[1] {
         let x = K::new(Integer::sample_uniform(&Integer::from(0), &(P-Integer::from(1))));
         // println!("{}", sum_abs);
         let compute_rhs = | x | {
@@ -222,35 +239,38 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
         if s == 0{
             continue;
         }
+        let sign_index = ((s + 1)/2) as usize;
+        
+        if finished_total[sign_index]{
+            continue;
+        }
+        
+        finished_total[sign_index] = true;
 
         let uns_p = UnsignedProjPoint::finite_point(x);
 
-        let mut s_vec = vec!();
-        let mut k = Integer::from(1);
-
-        for i in 0..sk.len(){
-            if sk[i]* s > 0{
-                s_vec.push(i);
-                k *= L[i].clone();
-            }
-        }
-
-        if s_vec.is_empty(){
-            continue;
-        }
+        let mut k = k_sign[sign_index].clone();
 
         let mut q_point = ell.scalar_mult_unsigned((P.clone()+Integer::from(1))/k.clone(), uns_p);
 
-        for j in 0..s_vec.len(){
-            let i = s_vec[s_vec.len()-j-1];
+        for j in 0..s_sign[sign_index].len(){
+            let i = s_sign[sign_index].len()-1-j;
+            if finished_sign[sign_index][i]{
+                continue;
+            }
+            finished_total[sign_index] = false;
 
-            let r_point = ell.scalar_mult_unsigned(k.clone()/L[i].clone(), q_point.clone());
+            let li : Integer = s_sign[sign_index][i].clone();
+            println!("{} - {}", li, e_sign[sign_index][i]);
+
+            let r_point = ell.scalar_mult_unsigned(k.clone()/(li.clone()), q_point.clone());
 
             if &r_point == &UnsignedProjPoint::infinite_point(){
+                println!("Too low index");
                 continue;
             }
 
-            let (ell_, q_point_) = match isogeny(&ell, &r_point, q_point.clone(), L[i].clone()){
+            let (ell_, q_point_) = match isogeny(&ell, &r_point, q_point.clone(), li.clone()){
                 Err(()) => {
                     println!("Erreur");
                     continue;
@@ -260,13 +280,18 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
 
             ell = ell_;
             q_point = q_point_;
-            // println!("{} - {}", order_naive(&ell, &q_point), k.clone()/L[i].clone());
-            //assert!(is_supersingular(inst, &ell));
-            sk[i] -= s as i32;
 
-            k /= L[i].clone();
+            // assert!(is_supersingular(inst, &ell));
+            // println!("Toujours supersinguliere");
+            e_sign[sign_index][i] -= s;
 
-            sum_abs -= 1;
+            // println!("{}", e_sign[sign_index][i]);
+
+            if e_sign[sign_index][i] == 0{
+                finished_sign[sign_index][i] = true;
+            }
+
+            k /= li;
         }
     }
     ell.a_2
