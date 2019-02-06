@@ -47,6 +47,6 @@ fn main() {
     let time_shared_b = (time::precise_time_ns()-current)/1000000;
     println!("Bob's shared secret: {} ({} ms)", shared_b, time_shared_b);
 
-    assert_eq!(shared_a, shared_a);
+    assert_eq!(shared_a, shared_b);
     println!("Shared secret match!");
 }
