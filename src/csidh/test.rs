@@ -92,7 +92,7 @@ fn class_group_action_commute(){
         let mut action1 : SecretKey = vec!();
         let mut action2 : SecretKey = vec!();
 
-        for j in 0..N_PRIMES{
+        for _j in 0..N_PRIMES{
             action1.push(rand::random::<i32>()%2);
             action2.push(rand::random::<i32>()%2);
         }
@@ -106,5 +106,71 @@ fn class_group_action_commute(){
         let pk21 = class_group_action(&inst, pk2, action1.clone());
 
         assert_eq!(pk12, pk21);
+    }
+}
+
+#[test]
+fn naive_class_group_action_commute(){
+    let inst = CSIDHInstance{ 
+        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
+        l:[Integer::from(3),Integer::from(5),Integer::from(7),
+                Integer::from(11),Integer::from(13),Integer::from(17),
+                Integer::from(19),Integer::from(23),Integer::from(29),
+                Integer::from(31),Integer::from(37),Integer::from(41),
+                Integer::from(61)]
+    };
+
+    for _i in 0..10{
+        let mut pk = K::from_int(0);
+    
+        let mut action1 : SecretKey = vec!();
+        let mut action2 : SecretKey = vec!();
+
+        for _j in 0..N_PRIMES{
+            action1.push(rand::random::<i32>()%2);
+            action2.push(rand::random::<i32>()%2);
+        }
+
+
+        let pk1 = naive_class_group_action(&inst, pk.clone(), action1.clone());
+        let pk12 = naive_class_group_action(&inst, pk1.clone(), action2.clone());
+
+
+        let pk2 = naive_class_group_action(&inst, pk, action2.clone());
+        let pk21 = naive_class_group_action(&inst, pk2, action1.clone());
+
+        assert_eq!(pk12, pk21);
+    }
+}
+
+#[test]
+fn isogeny_kernel(){
+    let inst = CSIDHInstance{ 
+        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
+        l:[Integer::from(3),Integer::from(5),Integer::from(7),
+                Integer::from(11),Integer::from(13),Integer::from(17),
+                Integer::from(19),Integer::from(23),Integer::from(29),
+                Integer::from(31),Integer::from(37),Integer::from(41),
+                Integer::from(61)]
+    };
+
+    let ell = EllipticCurve::new_montgomery(K::from_int(0));
+    let mut k = Integer::from(4);
+
+    for i in 0..N_PRIMES{
+        k *= inst.l[i].clone();
+    }
+
+    for _i in 0..10{
+        let j = rand::random::<usize>()%N_PRIMES;
+        let mut p = EllipticCurve::unsigne_point(ell.sample_point());
+
+        p = ell.scalar_mult_unsigned(k.clone()/inst.l[j].clone(), p);
+        if p == UnsignedProjPoint::infinite_point() || p.x == K::from_int(0){
+            continue;
+        }
+
+        let (_, q) = isogeny(&ell, &p, p.clone(), inst.l[j].clone()).unwrap();
+        assert_eq!(UnsignedProjPoint::infinite_point(), q);
     }
 }

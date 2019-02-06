@@ -156,6 +156,44 @@ pub fn verify_public_key(inst : &CSIDHInstance, pk : PublicKey) -> bool{
     is_supersingular(inst, &EllipticCurve::new_montgomery(pk))
 }
 
+pub fn naive_class_group_action(inst : &CSIDHInstance, pk : PublicKey, sk : SecretKey) -> PublicKey{
+    let L = &inst.l;
+    let P = &inst.p;
+
+    let mut ell = EllipticCurve::new_montgomery(pk);
+
+    let p_plus_1 = P+Integer::from(1);
+
+    for i in 0..sk.len(){
+        if sk[i] == 0{
+            continue;
+        }
+        let s = if sk[i]>0{ 1 } else { -1 };
+
+        for _j in 0..(s*sk[i]){
+            let compute_rhs = | x : &K | {
+            &(&( &(x*x)*x )*x + &((&ell.a_2)*x)*x )+ x 
+            };
+
+            let mut x = K::new(Integer::sample_uniform(&Integer::from(0), &(P-Integer::from(1))));;
+            let mut p_point = UnsignedProjPoint::finite_point(x.clone());
+
+            let mut q_point = ell.scalar_mult_unsigned(p_plus_1.clone()/L[i].clone(), p_point.clone());
+
+            while compute_rhs(&x).legendre_symbol() != s as i8 || q_point == UnsignedProjPoint::infinite_point() {
+                x = K::new(Integer::sample_uniform(&Integer::from(0), &(P-Integer::from(1))));
+
+                p_point = UnsignedProjPoint::finite_point(x.clone());
+                q_point = ell.scalar_mult_unsigned(p_plus_1.clone()/L[i].clone(), p_point);
+            }
+            let (ell_, _) = isogeny(&ell, &q_point, q_point.clone(), L[i].clone()).unwrap();
+            ell = ell_;
+        }
+
+    }
+    ell.a_2
+}
+
 pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : SecretKey) -> PublicKey{
     let L = &inst.l;
     let P = &inst.p;
@@ -219,7 +257,7 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
             ell = ell_;
             q_point = q_point_;
 
-            assert!(is_supersingular(inst, &ell));
+            //assert!(is_supersingular(inst, &ell));
             sk[i] -= s as i32;
 
             k /= L[i].clone();
