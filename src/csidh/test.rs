@@ -21,16 +21,20 @@ fn sample_montgomery() -> EllipticCurve<K>{
     ell
 }
 
+fn get_global_instance() -> CSIDHInstance{
+    CSIDHInstance{ 
+            p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
+            l:[Integer::from(3),Integer::from(5),Integer::from(7),
+                    Integer::from(11),Integer::from(13),Integer::from(17),
+                    Integer::from(19),Integer::from(23),Integer::from(29),
+                    Integer::from(31),Integer::from(37),Integer::from(41),
+                    Integer::from(61)]
+        }
+}
+
 #[test]
 fn everything_ok() {
-    let inst = CSIDHInstance{ 
-        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
-        l:[Integer::from(3),Integer::from(5),Integer::from(7),
-                Integer::from(11),Integer::from(13),Integer::from(17),
-                Integer::from(19),Integer::from(23),Integer::from(29),
-                Integer::from(31),Integer::from(37),Integer::from(41),
-                Integer::from(61)]
-    };
+    let inst = get_global_instance();
 
     check_well_defined(&inst);
 }
@@ -77,16 +81,9 @@ fn class_group_action_keep_valid() {
 
 #[test]
 fn class_group_action_commute(){
-    let inst = CSIDHInstance{ 
-        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
-        l:[Integer::from(3),Integer::from(5),Integer::from(7),
-                Integer::from(11),Integer::from(13),Integer::from(17),
-                Integer::from(19),Integer::from(23),Integer::from(29),
-                Integer::from(31),Integer::from(37),Integer::from(41),
-                Integer::from(61)]
-    };
+    let inst = get_global_instance();
 
-    for _i in 0..10{
+    for _i in 0..3{
         let mut pk = K::from_int(0);
     
         let mut action1 : SecretKey = vec!();
@@ -111,14 +108,9 @@ fn class_group_action_commute(){
 
 #[test]
 fn naive_class_group_action_commute(){
-    let inst = CSIDHInstance{ 
-        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
-        l:[Integer::from(3),Integer::from(5),Integer::from(7),
-                Integer::from(11),Integer::from(13),Integer::from(17),
-                Integer::from(19),Integer::from(23),Integer::from(29),
-                Integer::from(31),Integer::from(37),Integer::from(41),
-                Integer::from(61)]
-    };
+    let inst = get_global_instance();
+
+    check_well_defined(&inst);
 
     for _i in 0..10{
         let mut pk = K::from_int(0);
@@ -145,14 +137,7 @@ fn naive_class_group_action_commute(){
 
 #[test]
 fn isogeny_kernel(){
-    let inst = CSIDHInstance{ 
-        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
-        l:[Integer::from(3),Integer::from(5),Integer::from(7),
-                Integer::from(11),Integer::from(13),Integer::from(17),
-                Integer::from(19),Integer::from(23),Integer::from(29),
-                Integer::from(31),Integer::from(37),Integer::from(41),
-                Integer::from(61)]
-    };
+    let inst = get_global_instance();
 
     let ell = EllipticCurve::new_montgomery(K::from_int(0));
     let mut k = Integer::from(4);
