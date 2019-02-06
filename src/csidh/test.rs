@@ -1,15 +1,20 @@
 use super::*;
 
+fn get_global_instance() -> CSIDHInstance{
+    CSIDHInstance{ 
+            n_primes: 13,
+            p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
+            l:vec![Integer::from(3),Integer::from(5),Integer::from(7),
+                    Integer::from(11),Integer::from(13),Integer::from(17),
+                    Integer::from(19),Integer::from(23),Integer::from(29),
+                    Integer::from(31),Integer::from(37),Integer::from(41),
+                    Integer::from(61)]
+        }
+}
+
 fn sample_montgomery() -> EllipticCurve<K>{
 
-    let inst = CSIDHInstance{ 
-        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
-        l:[Integer::from(3),Integer::from(5),Integer::from(7),
-                Integer::from(11),Integer::from(13),Integer::from(17),
-                Integer::from(19),Integer::from(23),Integer::from(29),
-                Integer::from(31),Integer::from(37),Integer::from(41),
-                Integer::from(61)]
-    };
+    let inst = get_global_instance();
 
     let mut a = K::new(Integer::sample_uniform(&Integer::from(0), &Integer::from(inst.p.clone())));
     let mut ell = EllipticCurve::new_montgomery(a.clone());
@@ -19,17 +24,6 @@ fn sample_montgomery() -> EllipticCurve<K>{
         ell = EllipticCurve::new_montgomery(a);
     }
     ell
-}
-
-fn get_global_instance() -> CSIDHInstance{
-    CSIDHInstance{ 
-            p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
-            l:[Integer::from(3),Integer::from(5),Integer::from(7),
-                    Integer::from(11),Integer::from(13),Integer::from(17),
-                    Integer::from(19),Integer::from(23),Integer::from(29),
-                    Integer::from(31),Integer::from(37),Integer::from(41),
-                    Integer::from(61)]
-        }
 }
 
 #[test]
@@ -42,14 +36,7 @@ fn everything_ok() {
 #[test]
 fn known_supersingular_ec(){
 
-    let inst = CSIDHInstance{ 
-        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
-        l:[Integer::from(3),Integer::from(5),Integer::from(7),
-                Integer::from(11),Integer::from(13),Integer::from(17),
-                Integer::from(19),Integer::from(23),Integer::from(29),
-                Integer::from(31),Integer::from(37),Integer::from(41),
-                Integer::from(61)]
-    };
+    let inst = get_global_instance();
 
     // Note P = 3 mod 4, 2 mod 3
     assert!(is_supersingular(&inst, &EllipticCurve::new_reduced_weierstrass(K::from_int(1), K::from_int(0)))); // supersingular iff P = 3 mod 4
@@ -58,14 +45,7 @@ fn known_supersingular_ec(){
 
 #[test]
 fn class_group_action_keep_valid() {
-    let inst = CSIDHInstance{ 
-        p: Integer::from_str_radix("37118532150319619", 10).unwrap(),
-        l:[Integer::from(3),Integer::from(5),Integer::from(7),
-                Integer::from(11),Integer::from(13),Integer::from(17),
-                Integer::from(19),Integer::from(23),Integer::from(29),
-                Integer::from(31),Integer::from(37),Integer::from(41),
-                Integer::from(61)]
-    };
+    let inst = get_global_instance();
 
     for _i in 0..10{
         let mut pk = PublicKey::from_int(0);
@@ -82,6 +62,7 @@ fn class_group_action_keep_valid() {
 #[test]
 fn class_group_action_commute(){
     let inst = get_global_instance();
+    let N_PRIMES = inst.n_primes;
 
     for _i in 0..3{
         let mut pk = K::from_int(0);
@@ -109,6 +90,7 @@ fn class_group_action_commute(){
 #[test]
 fn naive_class_group_action_commute(){
     let inst = get_global_instance();
+    let N_PRIMES = inst.n_primes;
 
     check_well_defined(&inst);
 
@@ -138,16 +120,17 @@ fn naive_class_group_action_commute(){
 #[test]
 fn isogeny_kernel(){
     let inst = get_global_instance();
+    let N_PRIMES = inst.n_primes;
 
     let ell = EllipticCurve::new_montgomery(K::from_int(0));
     let mut k = Integer::from(4);
 
     for i in 0..N_PRIMES{
-        k *= inst.l[i].clone();
+        k *= inst.l[i as usize].clone();
     }
 
     for _i in 0..10{
-        let j = rand::random::<usize>()%N_PRIMES;
+        let j = rand::random::<usize>()%(N_PRIMES as usize);
         let mut p = EllipticCurve::unsigne_point(ell.sample_point());
 
         p = ell.scalar_mult_unsigned(k.clone()/inst.l[j].clone(), p);

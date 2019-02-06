@@ -5,13 +5,12 @@ use crate::field::*;
 use crate::elliptic_curves::*;
 use crate::elliptic_curves::fp_elliptic_curves::*;
 
-const N_PRIMES : usize = 13;
-
 pub type Integer = gmp::mpz::Mpz;
 
-type PrimeList = [Integer; N_PRIMES];
+type PrimeList = Vec<Integer>;
 
 pub struct CSIDHInstance{
+    pub n_primes : usize,
     pub l: PrimeList,
     pub p: Integer,
 }
@@ -25,6 +24,9 @@ pub type SecretKey =  Vec<i32>;
 pub fn check_well_defined(inst : &CSIDHInstance){
     let L = &inst.l;
     let P = &inst.p;
+    let N_PRIMES = inst.n_primes;
+
+    assert_eq!(N_PRIMES, inst.l.len());
 
     let mut prod = Integer::from(1);
     for i in 0..N_PRIMES{
@@ -36,6 +38,7 @@ pub fn check_well_defined(inst : &CSIDHInstance){
 fn is_supersingular(inst : &CSIDHInstance, ell : &EllipticCurve<K>) -> bool{
     let L = &inst.l;
     let P = &inst.p;
+    let N_PRIMES = inst.n_primes;
 
     loop{
         let p = EllipticCurve::unsigne_point(ell.sample_point()); // We test multiple point if necessary
@@ -106,27 +109,18 @@ fn isogeny(ell : &EllipticCurve<K>, point : &UnsignedProjPoint<K>, mut q : Unsig
 
     let mut i = Integer::from(1);
     while &Integer::from(2)*&i < k{
-    //     println!("{}", t);
-    // while t != UnsignedProjPoint::infinite_point(){
         if t.x == K::from_int(0){ // point of order 2
             return Err(());
         }
 
         pi.x *= t.x.clone();
-        pi.x *= t.x.clone();
 
         pi.z *= t.z.clone();
-        pi.z *= t.z.clone();
 
-        let s = t.x.clone()/t.z.clone() - t.z.clone()/t.x.clone();
+        sigma += t.x.clone()/t.z.clone() - t.z.clone()/t.x.clone();
 
-        sigma += K::from_int(2)*s;
-
-        let px = &t.x*&q.x - t.z.clone();
-        let pz = &q.x*&t.z - t.x.clone();
-
-        projection_x *= px.clone()*px;
-        projection_z *= pz.clone()*pz;
+        projection_x *= &t.x*&q.x - t.z.clone();
+        projection_z *= &q.x*&t.z - t.x.clone();
 
         if i == Integer::from(1){
             let _temp = t.clone();
@@ -140,6 +134,14 @@ fn isogeny(ell : &EllipticCurve<K>, point : &UnsignedProjPoint<K>, mut q : Unsig
         i += Integer::from(1);
     }
 
+    pi.x *= pi.x.clone();
+    pi.z *= pi.z.clone();
+
+    projection_x *= projection_x.clone();
+    projection_z *= projection_z.clone();
+
+    sigma *= K::from_int(2);
+
     pi = pi.normalize();
     Ok((
         EllipticCurve::new_montgomery(pi.x*(&ell.a_2 - &(K::from_int(3)*sigma))),
@@ -151,7 +153,6 @@ fn isogeny(ell : &EllipticCurve<K>, point : &UnsignedProjPoint<K>, mut q : Unsig
 
 }
 
-
 pub fn verify_public_key(inst : &CSIDHInstance, pk : PublicKey) -> bool{
     is_supersingular(inst, &EllipticCurve::new_montgomery(pk))
 }
@@ -159,6 +160,7 @@ pub fn verify_public_key(inst : &CSIDHInstance, pk : PublicKey) -> bool{
 pub fn naive_class_group_action(inst : &CSIDHInstance, pk : PublicKey, sk : SecretKey) -> PublicKey{
     let L = &inst.l;
     let P = &inst.p;
+    let N_PRIMES = &inst.n_primes;
 
     let mut ell = EllipticCurve::new_montgomery(pk);
 
@@ -172,10 +174,10 @@ pub fn naive_class_group_action(inst : &CSIDHInstance, pk : PublicKey, sk : Secr
 
         for _j in 0..(s*sk[i]){
             let compute_rhs = | x : &K | {
-            &(&( &(x*x)*x )*x + &((&ell.a_2)*x)*x )+ x 
+            &( &(x*x)*x  + &((&ell.a_2)*x)*x )+ x 
             };
 
-            let mut x = K::new(Integer::sample_uniform(&Integer::from(0), &(P-Integer::from(1))));;
+            let mut x = K::new(Integer::sample_uniform(&Integer::from(0), &(P-Integer::from(1))));
             let mut p_point = UnsignedProjPoint::finite_point(x.clone());
 
             let mut q_point = ell.scalar_mult_unsigned(p_plus_1.clone()/L[i].clone(), p_point.clone());
@@ -186,6 +188,7 @@ pub fn naive_class_group_action(inst : &CSIDHInstance, pk : PublicKey, sk : Secr
                 p_point = UnsignedProjPoint::finite_point(x.clone());
                 q_point = ell.scalar_mult_unsigned(p_plus_1.clone()/L[i].clone(), p_point);
             }
+            // println!("{} - {}", order_naive(&ell, &q_point), L[i]);
             let (ell_, _) = isogeny(&ell, &q_point, q_point.clone(), L[i].clone()).unwrap();
             ell = ell_;
         }
@@ -197,6 +200,7 @@ pub fn naive_class_group_action(inst : &CSIDHInstance, pk : PublicKey, sk : Secr
 pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : SecretKey) -> PublicKey{
     let L = &inst.l;
     let P = &inst.p;
+    let N_PRIMES = &inst.n_primes;
 
     let mut sum_abs : u32 = 0;
 
@@ -211,7 +215,7 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
         let x = K::new(Integer::sample_uniform(&Integer::from(0), &(P-Integer::from(1))));
         // println!("{}", sum_abs);
         let compute_rhs = | x | {
-            &(&( &(x*x)*x )*x + &((&ell.a_2)*x)*x )+ x 
+            &( &(x*x)*x  + &((&ell.a_2)*x)*x )+ x 
         };
 
         let s = compute_rhs(&x).legendre_symbol() as i32;
@@ -256,7 +260,7 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
 
             ell = ell_;
             q_point = q_point_;
-
+            // println!("{} - {}", order_naive(&ell, &q_point), k.clone()/L[i].clone());
             //assert!(is_supersingular(inst, &ell));
             sk[i] -= s as i32;
 
@@ -270,6 +274,7 @@ pub fn class_group_action(inst : &CSIDHInstance, pk : PublicKey, mut sk : Secret
 
 pub fn sample_keys(inst : &CSIDHInstance, m : i32) -> (PublicKey, SecretKey){
     let mut rng = rand::thread_rng();
+    let N_PRIMES = inst.n_primes;
     let mut sk : SecretKey = vec!();
     for _i in 0..N_PRIMES{
         sk.push(rng.gen_range(-m, m) as i32);
