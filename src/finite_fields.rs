@@ -253,7 +253,7 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> FiniteField for Fp<N, I
         let p = N::value();
         let a = self.clone();
 
-        if p.clone()%8 == Integer::from(3) || p.clone()%8 == Integer::from(5) || p.clone()%8 == Integer::from(7){
+        if p.clone()%8 == Integer::from(3) || p.clone()%8 == Integer::from(7){
             return exp(a, (p.clone()+Integer::from(1))/Integer::from(4));
         }
 
