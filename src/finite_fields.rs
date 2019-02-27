@@ -10,7 +10,7 @@ pub trait IntegerAsType<Integer : IntegerTrait>{
     fn value() -> Integer;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash)]
 pub struct Fp<N : IntegerAsType<Integer>, Integer : IntegerTrait>{
     repr : Integer,
     _phantom : PhantomData<N>,
@@ -22,7 +22,7 @@ macro_rules! declare_finite_field {
         mod $m{
             use super::*;
 
-            #[derive(Debug)]
+            #[derive(Debug, Hash)]
             pub struct TypeInt{}
 
             impl IntegerAsType<$integer> for TypeInt{
