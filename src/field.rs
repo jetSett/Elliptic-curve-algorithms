@@ -18,6 +18,7 @@ pub trait Field : Sized +
                   Mul<Output=Self> +
                   Div<Output=Self> +
                   Neg<Output=Self> +
+                  num_traits::ops::inv::Inv +
                   AddAssign +
                   MulAssign +
                   DivAssign +

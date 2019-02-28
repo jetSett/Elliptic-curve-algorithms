@@ -2,9 +2,13 @@ use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, MulAssign, DivAssign, SubAssi
 use std::clone::Clone;
 use std::fmt;
 
+use num_traits::ops::inv::Inv;
+
 use std::marker::PhantomData;
 
 use crate::field::{Field, IntegerTrait};
+
+mod integer_mpz;
 
 pub trait IntegerAsType<Integer : IntegerTrait>{
     fn value() -> Integer;
@@ -53,31 +57,6 @@ pub trait FiniteField : Field{
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> fmt::Display for Fp<N, Integer>{
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{}", self.repr)
-        }
-}
-
-impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Fp<N, Integer>{
-
-        pub fn inv(&self) -> Fp<N, Integer>{
-            assert!(self.repr != Integer::from(0));
-            let (mut t, mut new_t) = (Integer::from(0), Integer::from(1));
-            let (mut r, mut new_r) = (N::value(), self.repr.clone());
-            
-            while new_r != Integer::from(0){
-                let quotient = r.clone() / new_r.clone();
-                
-                let old_t = t;
-                t = new_t.clone();
-                new_t = old_t - quotient.clone()*new_t;
-
-                let old_r = r;
-                r = new_r.clone();
-                new_r = old_r - quotient*new_r;
-            }
-            if t < Integer::from(0){
-                t += N::value();
-            }
-            Fp::new(t)
         }
 }
 
@@ -160,6 +139,31 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Mul for &Fp<N, Integer>
         }
 }
 
+impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> num_traits::ops::inv::Inv for Fp<N, Integer>{
+    type Output = Self;
+    
+    default fn inv(self) -> Fp<N, Integer>{
+        assert!(self.repr != Integer::from(0));
+        let (mut t, mut new_t) = (Integer::from(0), Integer::from(1));
+        let (mut r, mut new_r) = (N::value(), self.repr.clone());
+        
+        while new_r != Integer::from(0){
+            let quotient = r.clone() / new_r.clone();
+            
+            let old_t = t;
+            t = new_t.clone();
+            new_t = old_t - quotient.clone()*new_t;
+
+            let old_r = r;
+            r = new_r.clone();
+            new_r = old_r - quotient*new_r;
+        }
+        if t < Integer::from(0){
+            t += N::value();
+        }
+        Fp::new(t)
+    }
+}
 
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Div for Fp<N, Integer>{
         type Output = Fp<N, Integer>;
@@ -199,9 +203,10 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Field for Fp<N, Integer
         }
     }
 
+
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> FiniteField for Fp<N, Integer>{
 
-    fn legendre_symbol(&self) -> i8{
+    default fn legendre_symbol(&self) -> i8{
         let mut a = self.repr.clone();
         let mut m = N::value();
         let mut t : i8 = 1;
@@ -228,11 +233,11 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> FiniteField for Fp<N, I
         }
     }
 
-    fn cardinal() -> Integer{
+    default fn cardinal() -> Integer{
         N::value()
     }
 
-    fn exp(a : Fp<N, Integer>, n : Integer) -> Fp<N, Integer>{
+    default fn exp(a : Fp<N, Integer>, n : Integer) -> Fp<N, Integer>{
         if n == Integer::from(0){
             return Fp::from_int(1);
         }
@@ -246,7 +251,7 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> FiniteField for Fp<N, I
         }
     }
 
-    fn square_root(self) -> Fp<N, Integer>{
+    default fn square_root(self) -> Fp<N, Integer>{
 
         let exp = Fp::exp;
 
@@ -302,12 +307,10 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> FiniteField for Fp<N, I
         }
     }
 
-    fn sign(&self) -> bool {
+    default fn sign(&self) -> bool {
         self.repr <= (N::value()-Integer::from(1))/Integer::from(2) // true if self is closer to 0 (0 is positive)
     }
 }
-
-
 
 #[cfg(test)]
 mod test;

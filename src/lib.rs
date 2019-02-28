@@ -1,3 +1,5 @@
+#![feature(specialization)]
+
 pub mod field;
 #[macro_use] pub mod finite_fields;
 
