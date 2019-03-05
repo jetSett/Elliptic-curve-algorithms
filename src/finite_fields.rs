@@ -2,13 +2,15 @@ use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, MulAssign, DivAssign, SubAssi
 use std::clone::Clone;
 use std::fmt;
 
+use gmp::mpz::Mpz;
+
 use num_traits::ops::inv::Inv;
 
 use std::marker::PhantomData;
 
 use crate::field::{Field, IntegerTrait};
 
-mod integer_mpz;
+pub mod integer_mpz;
 
 pub trait IntegerAsType<Integer : IntegerTrait>{
     fn value() -> Integer;
@@ -77,11 +79,10 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Add for Fp<N, Integer>{
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Add for &Fp<N, Integer>{
         type Output = Fp<N, Integer>;
 
-        fn add(self, other: &Fp<N, Integer>) -> Fp<N, Integer>{
-            Fp::new((self.repr.clone() + other.repr.clone()) % N::value())
+        default fn add(self, other: &Fp<N, Integer>) -> Fp<N, Integer>{
+            self.clone()+other.clone()
         }
 }
-
 
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> AddAssign for Fp<N, Integer>{
         fn add_assign(&mut self, other: Fp<N, Integer>){
@@ -111,15 +112,19 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Sub for Fp<N, Integer>{
         type Output = Fp<N, Integer>;
 
         fn sub(self, other: Fp<N, Integer>) -> Fp<N, Integer>{
-            Fp::new((self.repr - other.repr + N::value()) % N::value())
+            if self.repr > other.repr{
+                Fp::new(self.repr - other.repr)
+            }else{
+                Fp::new(self.repr - other.repr + N::value())
+            }
         }
 }
 
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Sub for &Fp<N, Integer>{
         type Output = Fp<N, Integer>;
 
-        fn sub(self, other: &Fp<N, Integer>) -> Fp<N, Integer>{
-            Fp::new((self.repr.clone() - other.repr.clone() + N::value()) % N::value())
+        default fn sub(self, other: &Fp<N, Integer>) -> Fp<N, Integer>{
+            self.clone()-other.clone()
         }
 }
 
@@ -134,8 +139,8 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Mul for Fp<N, Integer>{
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Mul for &Fp<N, Integer>{
         type Output = Fp<N, Integer>;
 
-        fn mul(self, other: &Fp<N, Integer>) -> Fp<N, Integer>{
-            Fp::new((self.repr.clone()*other.repr.clone()) % N::value())
+        default fn mul(self, other: &Fp<N, Integer>) -> Fp<N, Integer>{
+            self.clone()*other.clone()
         }
 }
 
@@ -188,21 +193,34 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> PartialEq for Fp<N, Int
 }
 
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> Field for Fp<N, Integer> {
-        
-        type Integer=Integer;
+    type Integer=Integer;
 
-        fn new(x : Integer) -> Fp<N, Integer>{
+    fn new(x : Integer) -> Fp<N, Integer>{
+        if Integer::from(0) <= x && x < N::value(){
             Fp{
-                repr: (x%N::value() + N::value())%N::value(),
+                repr: x,
                 _phantom: PhantomData,
             }
-        }
-
-        fn from_int(n : i32) -> Fp<N, Integer> {
-            Fp::new(Integer::from(n))
+        }else{
+            let y = x%N::value();
+            if y < Integer::from(0){
+                Fp{
+                    repr: y + N::value(),
+                    _phantom: PhantomData,
+                }
+            }else{
+                Fp{
+                    repr: y,
+                    _phantom: PhantomData,
+                }
+            }
         }
     }
 
+    fn from_int(n : i32) -> Fp<N, Integer> {
+        Fp::new(Integer::from(n))
+    }
+}
 
 impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> FiniteField for Fp<N, Integer>{
 
@@ -311,6 +329,7 @@ impl<N : IntegerAsType<Integer>, Integer : IntegerTrait> FiniteField for Fp<N, I
         self.repr <= (N::value()-Integer::from(1))/Integer::from(2) // true if self is closer to 0 (0 is positive)
     }
 }
+
 
 #[cfg(test)]
 mod test;
